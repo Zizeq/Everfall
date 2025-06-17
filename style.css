@@ -193,6 +193,7 @@ body {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.5); z-index: 49;
     opacity: 0; visibility: hidden; transition: all 0.3s ease;
+    pointer-events: none;
 }
 .modal-backdrop.visible { opacity: 1; visibility: visible; }
 
@@ -284,19 +285,119 @@ body {
 .item-thumbnail { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--color-fern-glow); }
 
 /* --- Journal (Flipbook) Styles --- */
-.journal-container { background-color: transparent; border: none; perspective: 2500px; padding: 20px; }
-.journal-book-container { width: 100%; height: 100%; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5)); }
-#actual-animated-journal .page { background-color: #F8F4E3; color: var(--color-text-dark); padding: 25px; display: flex; flex-direction: column; }
-#actual-animated-journal .hard { background-color: #6A4D34; color: var(--color-water-chestnut); justify-content: center; align-items: center; font-size: 2em; }
-.journal-page h3 { color: var(--color-mountain-forest); border-bottom: 1px solid var(--color-rock-cliffs); padding-bottom: 5px; margin: 0 0 15px 0; }
-.journal-page .character-profile { background: rgba(0,0,0,0.05); padding: 10px; border-radius: 5px; margin-bottom: 10px; }
-.journal-page .character-profile h4 { margin: 0 0 5px 0; }
-.journal-page .character-profile p { margin: 0; font-size: 0.9em; }
-.journal-textarea { width: 100%; flex-grow: 1; background: transparent; border: none; resize: none; color: var(--color-text-dark); font-family: 'Times New Roman', serif; font-size: 1.1em; outline: none; }
-.toc-page ul { list-style: none; padding: 0; }
-.toc-page li { padding: 8px; cursor: pointer; border-bottom: 1px dotted #ccc; }
-.toc-page li.locked { color: #999; cursor: not-allowed; }
-.journal-navigation { width: 100%; display: flex; justify-content: center; margin-top: 20px; }
+/* This whole section is replaced with the new journal styling */
+.journal-container {
+    background-color: transparent;
+    border: none;
+    perspective: 2500px;
+    padding: 20px;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.journal-book-container {
+    position:relative;
+    width: 100%;
+    height: 100%;
+    max-width: 1100px;
+    max-height: 800px;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
+}
+
+#actual-animated-journal .page {
+    background-color: #F8F4E3;
+    color: var(--color-text-dark);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Georgia', serif;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+}
+
+#actual-animated-journal .hard {
+    background-image: url('https://placehold.co/800x600/6A4D34/F5DEB3?text=Old+Book+Cover');
+    background-size: cover;
+    background-position: center;
+    color: var(--color-water-chestnut);
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    border: 5px solid #5C3D2B !important;
+}
+
+.journal-page h3 {
+    color: var(--color-mountain-forest);
+    border-bottom: 1px solid var(--color-rock-cliffs);
+    padding-bottom: 5px;
+    margin: 0 0 15px 0;
+}
+
+.journal-page .character-profile {
+    background: rgba(0,0,0,0.05);
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.journal-page .character-profile h4 {
+    margin: 0 0 5px 0;
+}
+
+.journal-page .character-profile p {
+    margin: 0;
+    font-size: 0.9em;
+}
+
+.journal-textarea {
+    width: 100%;
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    resize: none;
+    color: var(--color-text-dark);
+    font-family: 'Times New Roman', serif;
+    font-size: 1.1em;
+    outline: none;
+}
+
+.toc-page ul {
+    list-style: none;
+    padding: 0;
+}
+
+.toc-page li {
+    padding: 8px;
+    cursor: pointer;
+    border-bottom: 1px dotted #ccc;
+    font-size: 1.2em;
+}
+
+.toc-page li:hover {
+    color: var(--color-fern-glow);
+}
+
+.toc-page li.locked {
+    color: #999;
+    cursor: not-allowed;
+}
+
+.journal-navigation {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 15px;
+}
+
+.journal-navigation .nav-button:hover {
+    background-color: var(--color-antique-moss);
+    transform: translateY(-2px);
+}
+/* End of new journal styles */
+
 
 /* --- NEW: Extras, CG Gallery, Music Room --- */
 .extras-menu {
@@ -345,4 +446,14 @@ body {
 }
 .affection-indicator.show-heart {
     animation: affection-pulse 1s ease-out forwards;
+}
+/* Make the main journal container transparent to all mouse events */
+#journal-container {
+    pointer-events: none;
+}
+
+/* Then, re-enable mouse events ONLY for its direct children */
+/* (the book itself and the navigation bar) */
+#journal-container > * {
+    pointer-events: auto;
 }

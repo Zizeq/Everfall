@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalBackdrop = document.getElementById('modal-backdrop');
     let dialogueBoxElement, nameBoxElement, dialogueTextElement, continuePromptElement, choicesContainerElement, prevDialogueButton, nextDialogueButton, affectionIndicator;
     let topControlsElement;
-    let journalBookContainer;
+    let journalBookContainer; // UPDATED
 
     // NEW: References for new QoL and Extras screens
     let dialogueLogScreen, achievementsScreen, inventoryScreen, extrasScreen, cgGalleryScreen, musicRoomScreen;
@@ -31,10 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
         autoAdvanceSpeed: 0, // 0 is off, 1-10 is speed
         musicVolume: 0.5,
         sfxVolume: 0.75,
-        dialogueOpacity: 0.8, // NEW: Dialogue box opacity
-        fontSize: 'normal', // NEW: Font size (small, normal, large)
-        useDyslexicFont: false, // NEW: Dyslexic font toggle
-        highlightChoices: true, // NEW: Toggle for choice highlighting
+        dialogueOpacity: 0.8,
+        fontSize: 'normal',
+        useDyslexicFont: false,
+        highlightChoices: true,
         chosenOutfit: null,
         unlockedCharacters: new Set(['general']),
         dialogueHistory: [],
@@ -55,14 +55,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         inventory: new Set(),
         unlockedAchievements: new Set(),
-        previouslyChosenChoices: new Set(), // NEW: Tracks choice IDs that have been picked before
-        unlockedCGs: new Set(), // NEW: Stores IDs of unlocked CGs
-        unlockedTracks: new Set(), // NEW: Stores IDs of unlocked music tracks
+        previouslyChosenChoices: new Set(),
+        unlockedCGs: new Set(),
+        unlockedTracks: new Set(),
     };
 
     let saveSlots = Array(10).fill(null);
     const MAX_SAVE_SLOTS = 10;
-    const QUICK_SAVE_SLOT_INDEX = MAX_SAVE_SLOTS - 1; // Use the last slot for quick saves
+    const QUICK_SAVE_SLOT_INDEX = MAX_SAVE_SLOTS - 1;
     let availableChoices = new Set();
     let characterNotes = {};
     if (!characterNotes['general']) {
@@ -123,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
             pebbleton: { name: 'Pebbleton', description: 'A smooth, grey rock. Nova gave it to you.', thumbnail: 'https://placehold.co/100x100/999999/ffffff?text=Pebbleton' },
             mysterious_orb: { name: 'Mysterious Orb', description: 'Pulses with a faint, otherworldly light.', thumbnail: 'https://placehold.co/100x100/87ceeb/000000?text=Orb' },
         },
-        // NEW: CG Gallery assets
         cgs: {
             picnic_stars: {
                 id: 'picnic_stars',
@@ -138,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 full: 'https://placehold.co/1280x720/5A6F4E/ffffff?text=CG:+Waking+up+in+the+Forest'
             }
         },
-        // NEW: Music Room assets
         musicTracks: {
             melancholic_guitar: {
                 id: 'melancholic_guitar',
@@ -385,10 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="back-button" data-action="back-from-save-load"><i class="fas fa-arrow-left"></i> Back</button>
             </div>`;
 
-        journalContainer.innerHTML += `
+        // MODIFIED: Inject updated journal structure
+        journalContainer.innerHTML = `
             <div class="journal-book-container" id="actual-animated-journal"></div>
             <div class="journal-navigation">
-                <button class="nav-button" data-action="close-journal">Close Journal</button>
+                <button class="back-button" data-action="close-journal">Close Journal</button>
             </div>`;
 
         dialogueLogScreen = document.getElementById('dialogue-log-screen');
@@ -464,7 +463,6 @@ document.addEventListener('DOMContentLoaded', () => {
         journalBookContainer = document.getElementById('actual-animated-journal');
     }
 
-
     // --- Screen Management ---
     let currentScreen = 'main-menu';
 
@@ -497,15 +495,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(`Target screen with ID '${screenId}' not found.`);
         }
 
+        // MODIFIED: Delay renderJournal call
         if (screenId === 'save-load-screen') renderSaveLoadScreen('save-tab');
-        if (screenId === 'journal-container') renderJournal();
+        if (screenId === 'journal-container') requestAnimationFrame(renderJournal, 50); // Use requestAnimationFrame
         if (screenId === 'achievements-screen') renderAchievementsScreen();
         if (screenId === 'inventory-screen') renderInventoryScreen();
         if (screenId === 'cg-gallery-screen') renderCGGalleryScreen();
         if (screenId === 'music-room-screen') renderMusicRoomScreen();
     }
 
-    // --- Game Logic ---
+    // --- Game Logic (remains mostly the same) ---
     let currentBackground = null;
     let currentCharacterSprites = {};
     let typingTimeout = null;
@@ -804,7 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Save / Load Logic ---
+    // --- Save / Load Logic (remains mostly the same) ---
     function saveGame(slotIndex, saveName) {
         const isQuickSave = slotIndex === QUICK_SAVE_SLOT_INDEX;
         const finalSaveName = isQuickSave ? `Quick Save` : (saveName || `Save Slot ${slotIndex + 1}`);
@@ -824,13 +823,11 @@ document.addEventListener('DOMContentLoaded', () => {
             unlockedTracks: Array.from(gameState.unlockedTracks),
             availableChoices: Array.from(availableChoices),
             characterNotes: characterNotes,
-            // Save all settings
             musicVolume: gameState.musicVolume, sfxVolume: gameState.sfxVolume,
             typingSpeed: gameState.typingSpeed, skipMode: gameState.skipMode,
             autoAdvanceSpeed: gameState.autoAdvanceSpeed, dialogueOpacity: gameState.dialogueOpacity,
             fontSize: gameState.fontSize, useDyslexicFont: gameState.useDyslexicFont,
             highlightChoices: gameState.highlightChoices,
-            // Scene context
             currentBackground: currentBackground,
             currentCharacterSprites: {},
             currentDialogueText: dialogueTextElement.textContent,
@@ -1007,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- Settings UI & Logic ---
+    // --- Settings UI & Logic (remains the same) ---
     function updateAllSettingsUI() {
         updateRadioSetting('typing-speed-options', gameState.typingSpeed.toString());
         updateRadioSetting('skip-mode-options', gameState.skipMode);
@@ -1055,8 +1052,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('font-size-small', 'font-size-normal', 'font-size-large');
         document.body.classList.add(`font-size-${gameState.fontSize}`);
     }
+
+    // --- REPLACED: Journal, Extras, and other Screens ---
     
-    // --- Journal, Extras, and other Screens ---
     function renderJournal() {
         if (typeof jQuery === 'undefined' || typeof jQuery.fn.turn === 'undefined') {
             showMessageBox('Journal Error', 'Required libraries (jQuery, turn.js) are missing.', false);
@@ -1079,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
         pagesHtml += `<div class="page journal-page toc-page"><h2>Contents</h2><ul id="journal-toc-list">${tocListHtml}</ul></div>`;
         
-        let pageCounter = 3; // Cover is 1, ToC is 2
+        let pageCounter = 3; 
         assets.journalCharacters.forEach(charId => {
             charIdToPageMap[charId] = pageCounter++;
             const charData = assets.characters[charId];
@@ -1125,11 +1123,37 @@ document.addEventListener('DOMContentLoaded', () => {
         $flipbook.turn('page', 1);
     }
     
+    // NEW HELPER FUNCTIONS
+    function setupJournalEventListeners() {
+        const tocList = document.getElementById('journal-toc-list');
+        if (tocList) {
+            tocList.querySelectorAll('li:not(.locked)').forEach(item => {
+                item.onclick = (e) => selectJournalCharacter(e.target.closest('li').dataset.charId);
+            });
+        }
+    }
+    
     function selectJournalCharacter(charId) {
         if ($flipbook && $flipbook.data().turn) {
             const targetPage = charIdToPageMap[charId];
             if (targetPage) $flipbook.turn('page', targetPage);
         }
+    }
+
+    function goNextJournalPage() {
+        if ($flipbook) {
+            $flipbook.turn('next');
+        }
+    }
+
+    function goPrevJournalPage() {
+        if ($flipbook) {
+            $flipbook.turn('previous');
+        }
+    }
+
+    function updateJournalNavigationButtons() {
+        // Placeholder for future logic, e.g., disabling buttons on first/last page
     }
 
     function renderDialogueLog() {
@@ -1271,9 +1295,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (event.key === 'F5') { event.preventDefault(); saveGame(QUICK_SAVE_SLOT_INDEX); }
                 if (event.key === 'F9') { event.preventDefault(); loadGame(QUICK_SAVE_SLOT_INDEX); }
             }
+            // ADDED: Journal keydown listener
+            if (currentScreen === 'journal-container' && $flipbook && $flipbook.data().turn) {
+                if (event.key === 'ArrowLeft') {
+                    event.preventDefault();
+                    goPrevJournalPage();
+                } else if (event.key === 'ArrowRight') {
+                    event.preventDefault();
+                    goNextJournalPage();
+                }
+            }
         });
 
-        // FIX: Using a single, delegated event listener for the entire body
         document.body.addEventListener('click', (event) => {
             const actionTarget = event.target.closest('[data-action]');
             const tabTarget = event.target.closest('[data-tab]');
@@ -1313,10 +1346,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     'back-from-inventory': () => switchScreen('game-container'),
                     'music-toggle-button': () => { backgroundMusic.paused ? backgroundMusic.play() : backgroundMusic.pause(); updateMusicToggleButton(); },
                     'reset-game-prompt': () => showMessageBox('Reset ALL Progress?', 'This will erase all saves and unlocked content.', true, () => { localStorage.clear(); window.location.reload(); }),
+                    // MODIFIED: Close journal action
                     'close-journal': () => {
-                        if ($flipbook && $flipbook.data().turn) $flipbook.turn('destroy');
+                        if ($flipbook && $flipbook.data().turn) {
+                            $flipbook.turn('destroy');
+                        }
                         setTimeout(() => gameState.isGameActive ? switchScreen('game-container') : switchScreen('main-menu'), 50);
-                    }
+                    },
+                    // ADDED: Journal navigation actions
+                    'prev-journal-page': () => goPrevJournalPage(),
+                    'next-journal-page': () => goNextJournalPage(),
                 };
                 if (actions[action]) actions[action]();
             } else if (tabTarget) {
@@ -1374,15 +1413,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function setupJournalEventListeners() {
-        const tocList = document.getElementById('journal-toc-list');
-        if (tocList) {
-            tocList.querySelectorAll('li:not(.locked)').forEach(item => {
-                item.onclick = (e) => selectJournalCharacter(e.target.closest('li').dataset.charId);
-            });
-        }
-    }
-    
     // --- Initialization ---
     function initialize() {
         injectContent();

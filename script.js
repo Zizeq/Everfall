@@ -18,9 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // NEW: References for new QoL and Extras screens
     let dialogueLogScreen, achievementsScreen, inventoryScreen, extrasScreen, cgGalleryScreen, musicRoomScreen;
 
-    // NEW: turn.js specific variables
     let $flipbook;
     let charIdToPageMap = {};
+    let isJournalInitialized = false;
 
     // --- Game State Variables ---
     let gameState = {
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         unlockedCGs: new Set(),
         unlockedTracks: new Set(),
     };
-
+    
     let saveSlots = Array(10).fill(null);
     const MAX_SAVE_SLOTS = 10;
     const QUICK_SAVE_SLOT_INDEX = MAX_SAVE_SLOTS - 1;
@@ -497,7 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // MODIFIED: Delay renderJournal call
         if (screenId === 'save-load-screen') renderSaveLoadScreen('save-tab');
-        if (screenId === 'journal-container') requestAnimationFrame(renderJournal, 50); // Use requestAnimationFrame
         if (screenId === 'achievements-screen') renderAchievementsScreen();
         if (screenId === 'inventory-screen') renderInventoryScreen();
         if (screenId === 'cg-gallery-screen') renderCGGalleryScreen();
@@ -1055,31 +1054,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- REPLACED: Journal, Extras, and other Screens ---
     
-    function renderJournal() {
-        // Re-acquire the container element every time to be safe
-        journalBookContainer = document.getElementById('actual-animated-journal'); // <-- ADD THIS LINE
+function renderJournal() {
+        // This guard clause is correct and stops the function from ever running again.
+        if (isJournalInitialized) return;
 
-        // The rest of the function continues below...
-        if (typeof jQuery === 'undefined' || typeof jQuery.fn.turn === 'undefined') {
-            //...
-            showMessageBox('Journal Error', 'Required libraries (jQuery, turn.js) are missing.', false);
-            return;
-        }
+        // This check for an existing flipbook is no longer needed, but is safe to keep.
         if ($flipbook && $flipbook.data().turn) {
             $flipbook.turn('destroy');
         }
+        
         journalBookContainer.innerHTML = '';
-
         let pagesHtml = '';
         charIdToPageMap = {};
         
+        // Start building the HTML string, starting with the front cover.
         pagesHtml += `<div class="page hard"><h3>Everfall Journal</h3></div>`;
         
+        // Build the Table of Contents HTML...
         let tocListHtml = assets.journalCharacters.map(charId => {
             const charName = assets.characters[charId].name;
             const isUnlocked = gameState.unlockedCharacters.has(charId);
             return `<li data-char-id="${charId}" class="${isUnlocked ? '' : 'locked'}">${isUnlocked ? charName : '??? <i class="fas fa-lock"></i>'}</li>`;
         }).join('');
+
+        // ...and add the full Contents page to the HTML string.
         pagesHtml += `<div class="page journal-page toc-page"><h2>Contents</h2><ul id="journal-toc-list">${tocListHtml}</ul></div>`;
         
         let pageCounter = 3; 
@@ -1097,13 +1095,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h4>Player Notes</h4>
                     <textarea class="journal-textarea" id="notes-textarea-${charId}" placeholder="Your notes on ${charData.name}..."></textarea>`;
             }
+            // Add this character's page to the HTML string.
             pagesHtml += `<div class="page journal-page" data-char-id="${charId}"><h3>${charData.name}</h3><div class="page-content">${characterPageContent}</div></div>`;
         });
-        
+
+        // ADDED: The closing back cover was missing.
         pagesHtml += `<div class="page hard"></div>`;
+
+        // MOVED: This now happens only once at the end, with the complete HTML.
         journalBookContainer.innerHTML = pagesHtml;
         
+        // MOVED: This also happens at the end, after the HTML is in the document.
         requestAnimationFrame(initializeFlipbook);
+        
+        // MOVED: Set the flag once, at the very end of the function.
+        isJournalInitialized = true;
     }
 
     function initializeFlipbook() {
@@ -1432,10 +1438,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function initialize() {
         injectContent();
         loadGameDataFromStorage();
+        renderJournal(); // <-- ADD THIS LINE to build the journal on startup
         setupEventListeners();
         updateAllSettingsUI();
         switchScreen('main-menu');
-    }
-
+}
     initialize();
 });

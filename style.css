@@ -294,8 +294,21 @@ body {
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    /* We add a high z-index to ensure it's on top of the backdrop we will manually activate */
     z-index: 100;
+
+    /* --- NEW: Hide the journal by default --- */
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0s 0.3s;
+}
+
+/* --- NEW: This class will be toggled by JS to show the journal --- */
+.journal-container.journal-visible {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 0.3s ease;
 }
 
 .journal-book-container {

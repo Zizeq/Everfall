@@ -294,6 +294,8 @@ body {
     justify-content: center;
     align-items: center;
     overflow: hidden;
+    /* We add a high z-index to ensure it's on top of the backdrop we will manually activate */
+    z-index: 100;
 }
 
 .journal-book-container {
@@ -317,6 +319,8 @@ body {
 
 #actual-animated-journal .hard {
     background-image: url('https://placehold.co/800x600/6A4D34/F5DEB3?text=Old+Book+Cover');
+    background-color: #6A4D34; /* ADD THIS: Sets a solid brown background color */
+    padding: 0; /* ADD THIS: Removes the inherited padding */
     background-size: cover;
     background-position: center;
     color: var(--color-water-chestnut);
@@ -325,7 +329,7 @@ body {
     font-size: 2em;
     font-weight: bold;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    border: 5px solid #5C3D2B !important;
+    box-shadow: inset 0 0 0 5px #5C3D2B;
 }
 
 .journal-page h3 {
@@ -456,4 +460,8 @@ body {
 /* (the book itself and the navigation bar) */
 #journal-container > * {
     pointer-events: auto;
+}
+.journal-navigation {
+    position: relative; /* Establish a stacking context */
+    z-index: 100;       /* Lift it above the flipbook */
 }

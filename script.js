@@ -1056,7 +1056,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- REPLACED: Journal, Extras, and other Screens ---
     
     function renderJournal() {
+        // Re-acquire the container element every time to be safe
+        journalBookContainer = document.getElementById('actual-animated-journal'); // <-- ADD THIS LINE
+
+        // The rest of the function continues below...
         if (typeof jQuery === 'undefined' || typeof jQuery.fn.turn === 'undefined') {
+            //...
             showMessageBox('Journal Error', 'Required libraries (jQuery, turn.js) are missing.', false);
             return;
         }
@@ -1334,7 +1339,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     'ingame-settings': () => switchScreen('settings-screen', true),
                     'ingame-save': () => { switchScreen('save-load-screen', true); renderSaveLoadScreen('save-tab'); },
                     'ingame-load': () => { switchScreen('save-load-screen', true); renderSaveLoadScreen('load-tab'); },
-                    'ingame-journal': () => switchScreen('journal-container', true),
+                    'ingame-journal': () => {
+                    // First, manually show the dimming backdrop
+                    modalBackdrop.classList.add('visible');
+                    // Now, show the journal screen, but tell switchScreen it's NOT a standard modal
+                    switchScreen('journal-container', false); 
+                    },
                     'ingame-inventory': () => switchScreen('inventory-screen', true),
                     'ingame-dialogue-log': () => { switchScreen('dialogue-log-screen', true); renderDialogueLog(); },
                     'return-to-main-menu-confirm': () => showMessageBox('Return to Menu', 'Unsaved progress will be lost.', true, () => { gameState.isGameActive = false; switchScreen('main-menu'); }),
@@ -1348,10 +1358,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     'reset-game-prompt': () => showMessageBox('Reset ALL Progress?', 'This will erase all saves and unlocked content.', true, () => { localStorage.clear(); window.location.reload(); }),
                     // MODIFIED: Close journal action
                     'close-journal': () => {
-                        if ($flipbook && $flipbook.data().turn) {
-                            $flipbook.turn('destroy');
-                        }
-                        setTimeout(() => gameState.isGameActive ? switchScreen('game-container') : switchScreen('main-menu'), 50);
+                    // Manually hide the dimming backdrop
+                    modalBackdrop.classList.remove('visible');
+
+                    // Hide the journal container by switching back to the game or main menu
+                    if (gameState.isGameActive) {
+                    switchScreen('game-container');
+                    } else {
+                    switchScreen('main-menu');
+                    }
                     },
                     // ADDED: Journal navigation actions
                     'prev-journal-page': () => goPrevJournalPage(),

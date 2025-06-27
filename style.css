@@ -23,7 +23,7 @@
     --char-guard: #606060;
     --char-willow-mom: #9966cc;
 
-    --dialogue-bg-opacity: 0.8; /* NEW: Controlled by JS */
+    --dialogue-bg-opacity: 0.8; /* Controlled by JS */
 }
 
 /* --- General Body and Font Styles --- */
@@ -36,7 +36,6 @@ body {
     width: 100vw;
     height: 100vh;
 }
-/* NEW: Font Style Classes */
 .font-dyslexic {
     font-family: 'Open Sans', sans-serif; /* Using Open Sans as a readable alternative */
 }
@@ -111,7 +110,6 @@ body {
 .dialogue-box {
     position: absolute; bottom: 0; left: 0; width: 100%;
     min-height: 150px;
-    /* NEW: Using CSS variable for opacity */
     background-color: rgba(20, 20, 20, var(--dialogue-bg-opacity));
     border-top: 2px solid var(--color-fern-glow);
     padding: 20px; box-sizing: border-box; display: flex;
@@ -131,7 +129,6 @@ body {
 .dialogue-text {
     flex-grow: 1; line-height: 1.6; width: 100%;
 }
-/* ... character color classes ... */
 .general-dialogue { border-color: var(--color-fern-glow); } .general-dialogue .name-box { background-color: var(--color-organic); }
 .clover { border-color: var(--char-clover); } .clover .name-box { background-color: var(--char-clover); }
 .willow { border-color: var(--char-willow); } .willow .name-box { background-color: var(--char-willow); }
@@ -173,9 +170,8 @@ body {
     background-color: var(--color-antique-moss);
     transform: translateY(-3px);
 }
-/* NEW: Previously chosen choice style */
 .choice-button.previously-chosen {
-    border-color: var(--char-clover); /* Use a distinct color */
+    border-color: var(--char-clover);
     box-shadow: inset 0 0 10px rgba(122, 82, 163, 0.5);
 }
 
@@ -238,7 +234,6 @@ body {
 .block-slider .block.active { background-color: var(--color-fern-glow); }
 .slider-label { font-size: 0.8em; text-align: center; color: var(--color-rock-cliffs); }
 
-/* NEW: Toggle Switch Styles */
 .custom-toggle { align-items: center; gap: 10px; }
 .custom-toggle input[type="checkbox"] { display: none; }
 .custom-toggle .slider {
@@ -272,7 +267,7 @@ body {
 .log-speaker.willow { color: var(--char-willow); } .log-speaker.nova { color: var(--char-nova); }
 .log-narration { font-style: italic; color: var(--color-rock-cliffs); }
 
-/* --- Achievements & Inventory --- */
+/* --- Achievements, Inventory, CG Gallery, Music Room --- */
 .achievements-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
 .achievement-item { background-color: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; display: flex; align-items: center; gap: 15px; }
 .achievement-item.locked { filter: grayscale(80%); opacity: 0.7; }
@@ -280,143 +275,6 @@ body {
 .poem-display { background-color: rgba(0,0,0,0.2); border-radius: 10px; padding: 20px; margin-top: 20px; }
 .poem-fragment.locked-fragment { color: var(--color-rock-cliffs); }
 
-.item-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
-.inventory-item { background-color: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; text-align: center; }
-.item-thumbnail { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--color-fern-glow); }
-
-/* --- Journal (Flipbook) Styles --- */
-/* This whole section is replaced with the new journal styling */
-.journal-container {
-    background-color: transparent;
-    border: none;
-    perspective: 2500px;
-    padding: 20px;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    z-index: 100;
-
-    /* --- NEW: Hide the journal by default --- */
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease, visibility 0s 0.3s;
-}
-
-/* --- NEW: This class will be toggled by JS to show the journal --- */
-.journal-container.journal-visible {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-    transition: opacity 0.3s ease;
-}
-
-.journal-book-container {
-    position:relative;
-    width: 100%;
-    height: 100%;
-    max-width: 1100px;
-    max-height: 800px;
-    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
-}
-
-#actual-animated-journal .page {
-    background-color: #F8F4E3;
-    color: var(--color-text-dark);
-    padding: 25px;
-    display: flex;
-    flex-direction: column;
-    font-family: 'Georgia', serif;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-}
-
-#actual-animated-journal .hard {
-    background-image: url('https://placehold.co/800x600/6A4D34/F5DEB3?text=Old+Book+Cover');
-    background-color: #6A4D34; /* ADD THIS: Sets a solid brown background color */
-    padding: 0; /* ADD THIS: Removes the inherited padding */
-    background-size: cover;
-    background-position: center;
-    color: var(--color-water-chestnut);
-    justify-content: center;
-    align-items: center;
-    font-size: 2em;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    box-shadow: inset 0 0 0 5px #5C3D2B;
-}
-
-.journal-page h3 {
-    color: var(--color-mountain-forest);
-    border-bottom: 1px solid var(--color-rock-cliffs);
-    padding-bottom: 5px;
-    margin: 0 0 15px 0;
-}
-
-.journal-page .character-profile {
-    background: rgba(0,0,0,0.05);
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-}
-
-.journal-page .character-profile h4 {
-    margin: 0 0 5px 0;
-}
-
-.journal-page .character-profile p {
-    margin: 0;
-    font-size: 0.9em;
-}
-
-.journal-textarea {
-    width: 100%;
-    flex-grow: 1;
-    background: transparent;
-    border: none;
-    resize: none;
-    color: var(--color-text-dark);
-    font-family: 'Times New Roman', serif;
-    font-size: 1.1em;
-    outline: none;
-}
-
-.toc-page ul {
-    list-style: none;
-    padding: 0;
-}
-
-.toc-page li {
-    padding: 8px;
-    cursor: pointer;
-    border-bottom: 1px dotted #ccc;
-    font-size: 1.2em;
-}
-
-.toc-page li:hover {
-    color: var(--color-fern-glow);
-}
-
-.toc-page li.locked {
-    color: #999;
-    cursor: not-allowed;
-}
-
-.journal-navigation {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-    gap: 15px;
-}
-
-.journal-navigation .nav-button:hover {
-    background-color: var(--color-antique-moss);
-    transform: translateY(-2px);
-}
-/* End of new journal styles */
-
-
-/* --- NEW: Extras, CG Gallery, Music Room --- */
 .extras-menu {
     display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%;
 }
@@ -443,6 +301,271 @@ body {
 .music-item.locked { color: #888; }
 .play-music-btn { background: var(--color-fern-glow); color: var(--color-text-dark); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
 
+/* --- Journal (Flipbook) Styles --- */
+.journal-container {
+    background-color: transparent;
+    border: none;
+    perspective: 2500px;
+    padding: 20px;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    z-index: 100;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0s 0.3s;
+}
+.journal-container.journal-visible {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 0.3s ease;
+}
+.journal-book-container {
+    position:relative;
+    width: 100%;
+    height: 100%;
+    max-width: 1100px;
+    max-height: 800px;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
+}
+#actual-animated-journal .page {
+    background-color: #F8F4E3;
+    color: var(--color-text-dark);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Georgia', serif;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+}
+#actual-animated-journal .hard {
+    background-image: url('https://placehold.co/800x600/6A4D34/F5DEB3?text=Old+Book+Cover');
+    background-color: #6A4D34;
+    padding: 0;
+    background-size: cover;
+    background-position: center;
+    color: var(--color-water-chestnut);
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    box-shadow: inset 0 0 0 5px #5C3D2B;
+}
+.journal-page h3 {
+    color: var(--color-mountain-forest);
+    border-bottom: 1px solid var(--color-rock-cliffs);
+    padding-bottom: 5px;
+    margin: 0 0 15px 0;
+}
+.journal-page .character-profile {
+    background: rgba(0,0,0,0.05);
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+.journal-page .character-profile h4 { margin: 0 0 5px 0; }
+.journal-page .character-profile p { margin: 0; font-size: 0.9em; }
+.journal-textarea {
+    width: 100%; flex-grow: 1; background: transparent; border: none;
+    resize: none; color: var(--color-text-dark); font-family: 'Times New Roman', serif;
+    font-size: 1.1em; outline: none;
+}
+.toc-page ul { list-style: none; padding: 0; }
+.toc-page li { padding: 8px; cursor: pointer; border-bottom: 1px dotted #ccc; font-size: 1.2em; }
+.toc-page li:hover { color: var(--color-fern-glow); }
+.toc-page li.locked { color: #999; cursor: not-allowed; }
+.journal-navigation {
+    width: 100%; display: flex; justify-content: center;
+    margin-top: 20px; gap: 15px; position: relative; z-index: 100;
+}
+#journal-container { pointer-events: none; }
+#journal-container > * { pointer-events: auto; }
+
+/* --- NEW FEATURE STYLES --- */
+/* --- Inventory Tweaks --- */
+.inventory-section {
+    width: 100%;
+    margin-bottom: 25px;
+}
+.inventory-section h3 {
+    color: var(--color-fern-glow);
+    border-bottom: 1px solid var(--color-fern-glow);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+}
+.inventory-item {
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+}
+.item-thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--color-fern-glow);
+}
+.item-type-tag {
+    font-size: 0.8em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background-color: var(--color-mountain-forest);
+    color: white;
+    margin-top: 10px;
+    display: inline-block;
+}
+
+/* --- World Map Styles --- */
+.world-map-container {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: auto;
+    aspect-ratio: 16 / 9;
+    background-image: url('https://placehold.co/1280x720/333/666?text=World+Map+Background');
+    background-size: cover;
+    background-position: center;
+    border-radius: 10px;
+}
+.map-point {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-color: var(--color-fern-glow);
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2em;
+}
+.map-point:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 15px var(--color-fern-glow);
+}
+.map-point.locked {
+    background-color: #555;
+    border-color: #888;
+    cursor: not-allowed;
+    color: #999;
+}
+.map-point.locked:hover {
+    transform: none;
+    box-shadow: none;
+}
+.map-point .map-point-tooltip {
+    visibility: hidden;
+    width: 160px;
+    background-color: rgba(0,0,0,0.8);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 150%;
+    left: 50%;
+    margin-left: -80px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.map-point:hover .map-point-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* --- Cooking Screen Styles --- */
+.cooking-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+}
+.cooking-section {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+.cooking-section h3 {
+    color: var(--color-fern-glow);
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(255,255,255,0.2);
+}
+.scrollable-list {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+.recipe-item, .ingredient-item {
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    background-color: rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.recipe-item:hover {
+    background-color: rgba(173, 199, 126, 0.3);
+}
+.recipe-item.selected {
+    background-color: var(--color-antique-moss);
+    border: 1px solid var(--color-fern-glow);
+}
+.recipe-item.locked {
+    color: #888;
+    cursor: not-allowed;
+}
+.cook-button {
+    background-color: var(--color-organic);
+    color: var(--color-text-light);
+    border: 2px solid var(--color-fern-glow);
+    border-radius: 10px;
+    padding: 15px 20px;
+    font-size: 1.1em;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s ease;
+    margin-top: 15px;
+}
+.cook-button:hover:not(:disabled) {
+    background-color: var(--color-antique-moss);
+}
+.cook-button:disabled {
+    background-color: #555;
+    border-color: #777;
+    cursor: not-allowed;
+}
+.recipe-details-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.recipe-details-content li {
+    margin-bottom: 5px;
+}
+.recipe-details-content .has-ingredient {
+    color: var(--color-fern-glow);
+}
+.recipe-details-content .missing-ingredient {
+    color: #e74c3c;
+    text-decoration: line-through;
+}
+
+
 /* --- Utility & Popups --- */
 .message-box-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; }
 .message-box { background: var(--color-organic); border: 2px solid var(--color-fern-glow); border-radius: 15px; padding: 25px; text-align: center; max-width: 90%; width: 450px; }
@@ -463,18 +586,4 @@ body {
 }
 .affection-indicator.show-heart {
     animation: affection-pulse 1s ease-out forwards;
-}
-/* Make the main journal container transparent to all mouse events */
-#journal-container {
-    pointer-events: none;
-}
-
-/* Then, re-enable mouse events ONLY for its direct children */
-/* (the book itself and the navigation bar) */
-#journal-container > * {
-    pointer-events: auto;
-}
-.journal-navigation {
-    position: relative; /* Establish a stacking context */
-    z-index: 100;       /* Lift it above the flipbook */
 }

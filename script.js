@@ -13,11 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalBackdrop = document.getElementById('modal-backdrop');
     let dialogueBoxElement, nameBoxElement, dialogueTextElement, continuePromptElement, choicesContainerElement, prevDialogueButton, nextDialogueButton, affectionIndicator;
     let topControlsElement;
-    let journalBookContainer; // UPDATED
+    let journalBookContainer;
 
-    // NEW: References for new QoL and Extras screens
+    // References for new QoL and Extras screens
     let dialogueLogScreen, achievementsScreen, inventoryScreen, extrasScreen, cgGalleryScreen, musicRoomScreen;
+    // ADDED: References for new feature screens
+    let worldMapScreen, cookingScreen;
 
+    // REVERTED: Journal variables for flipbook
     let $flipbook;
     let charIdToPageMap = {};
     let isJournalInitialized = false;
@@ -44,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
         waitingForInput: false,
         skipTypingRequest: false,
         autoAdvanceTimeoutId: null,
-        currentJournalCharacter: 'general',
         currentDialogueText: '',
         currentSpeaker: '',
         isOverlayOpen: false,
@@ -58,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
         previouslyChosenChoices: new Set(),
         unlockedCGs: new Set(),
         unlockedTracks: new Set(),
+        // ADDED FOR NEW FEATURES
+        unlockedRecipes: new Set(['hearty_stew']), // Start with one known recipe
+        unlockedMapLocations: new Set(['everfall_city']), // Start with one unlocked location
     };
     
     let saveSlots = Array(10).fill(null);
@@ -120,8 +125,54 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         journalCharacters: ['nova', 'amaryllis', 'kelly', 'ray', 'clay', 'fenrir', 'cerberus'],
         items: {
-            pebbleton: { name: 'Pebbleton', description: 'A smooth, grey rock. Nova gave it to you.', thumbnail: 'https://placehold.co/100x100/999999/ffffff?text=Pebbleton' },
-            mysterious_orb: { name: 'Mysterious Orb', description: 'Pulses with a faint, otherworldly light.', thumbnail: 'https://placehold.co/100x100/87ceeb/000000?text=Orb' },
+            pebbleton: { name: 'Pebbleton', description: 'A smooth, grey rock. Nova gave it to you.', thumbnail: 'https://placehold.co/100x100/999999/ffffff?text=Pebbleton', type: 'key' },
+            mysterious_orb: { name: 'Mysterious Orb', description: 'Pulses with a faint, otherworldly light.', thumbnail: 'https://placehold.co/100x100/87ceeb/000000?text=Orb', type: 'key' },
+            smugglers_ledger: { name: "Smuggler's Ledger", description: 'A coded ledger found at the docks.', thumbnail: 'https://placehold.co/100x100/8B4513/FFFFFF?text=Ledger', type: 'clue' },
+            sun_kissed_berries: { name: 'Sun-Kissed Berries', description: 'Sweet and juicy berries that grow in sunny clearings.', thumbnail: 'https://placehold.co/100x100/FF6347/FFFFFF?text=Berries', type: 'ingredient' },
+            river_root_spice: { name: 'River-Root Spice', description: 'A spicy root found near riverbanks.', thumbnail: 'https://placehold.co/100x100/D2691E/FFFFFF?text=Spice', type: 'ingredient' },
+            cave_salt: { name: 'Cave Salt', description: 'Crunchy salt crystals from deep caves.', thumbnail: 'https://placehold.co/100x100/F5F5F5/333333?text=Salt', type: 'ingredient' },
+            hearty_stew_dish: { name: "Hearty Stew", description: "A warm, savory stew. Tastes like home.", thumbnail: 'https://placehold.co/100x100/A0522D/FFFFFF?text=Stew', type: 'food'},
+        },
+        recipes: {
+            hearty_stew: {
+                id: 'hearty_stew',
+                name: "Hearty Stew",
+                description: "A simple but filling stew, perfect for a weary traveler. Kelly would probably like this.",
+                ingredients: { 'river_root_spice': 1, 'cave_salt': 1 },
+                result: 'hearty_stew_dish'
+            },
+            berry_tarts: {
+                id: 'berry_tarts',
+                name: "High-Energy Berry Tarts",
+                description: "Sweet and zesty tarts. Looks like something Nova would devour in seconds.",
+                ingredients: { 'sun_kissed_berries': 2 },
+                result: 'berry_tarts_dish'
+            }
+        },
+        mapLocations: {
+            everfall_city: {
+                id: 'everfall_city',
+                name: 'Everfall City',
+                description: 'The main hub of this world. Bustling with activity.',
+                coords: { top: '50%', left: '50%' },
+                lore: 'The capital city, heavily guarded but full of merchants and secrets.'
+            },
+            slaving_compound: {
+                id: 'slaving_compound',
+                name: 'Slaver Compound',
+                description: 'A grim place from your recent past.',
+                coords: { top: '75%', left: '20%' },
+                lore: 'You were held captive here. The memories are still fresh.',
+                gatherableIngredients: ['cave_salt']
+            },
+            darnen_ruins: {
+                id: 'darnen_ruins',
+                name: "Darnen's Ruins",
+                description: 'The ancient ruins where you discovered the altar.',
+                coords: { top: '25%', left: '75%' },
+                lore: 'An ancient place of power. You feel a strange energy lingering.',
+                gatherableIngredients: ['sun_kissed_berries', 'river_root_spice']
+            }
         },
         cgs: {
             picnic_stars: {
@@ -166,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const story = [
         { id: 'start_story', type: 'background', src: assets.backgrounds.graduationHall, fade: true },
         { type: 'narration', text: 'The graduation ceremony is over. Willow drags me on stage, gives a heartfelt speech, and then we plan a picnic.' },
+        { type: 'action', action: 'unlockMapLocation', locationId: 'darnen_ruins'},
         { type: 'sprite_action', character: 'willow', action: 'show', position: 'center', emotion: 'default' },
         { type: 'name', name: 'Willow' },
         { type: 'character', name: 'Willow', text: 'Tonight! Picnic under the stars! You in, Clover?' },
@@ -188,12 +240,16 @@ document.addEventListener('DOMContentLoaded', () => {
         { type: 'action', action: 'unlockCG', cgId: 'isekai_awakening' },
         { type: 'narration', text: 'I wake up, aching, in a strange, unfamiliar forest. And I\'m... different. Hooves? Fur?' },
         { type: 'narration', text: 'Soon, I\'m captured by lizard-like guards and thrown into a cell.' },
+        { type: 'action', action: 'unlockMapLocation', locationId: 'slaving_compound' },
         { type: 'background', src: assets.backgrounds.prisonCell, fade: true },
         { type: 'narration', text: 'My cellmate is a chirpy fennec-bat creature named Nova.' },
         { type: 'sprite_action', character: 'nova', action: 'show', position: 'center', emotion: 'default' },
         { type: 'action', action: 'unlockCharacter', character: 'nova' },
-        { type: 'action', action: 'increaseAffection', character: 'nova', amount: 10 },
+        { type: 'narration', text: 'Nova gives you a small, smooth stone. "For luck," he says.' },
         { type: 'action', action: 'gainItem', item: 'pebbleton' },
+        { type: 'narration', text: 'You also find some strange, spicy-smelling root on the floor.' },
+        { type: 'action', action: 'gainItem', item: 'river_root_spice' },
+        { type: 'action', action: 'increaseAffection', character: 'nova', amount: 10 },
         { type: 'name', name: 'Nova' },
         { type: 'character', name: 'Nova', text: 'Welcome to the party, new roomie! Name\'s Nova.' },
         { type: 'name', name: 'Clover' },
@@ -221,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function injectContent() {
         mainMenu.innerHTML = `
             <h1 class="menu-title">Everfall</h1>
-            <button class="menu-button" data-action="start-game">Start Game</button>
+            <button class="menu-button" data-action="start-game-prompt">Start Game</button>
             <button class="menu-button" data-action="load-game-menu">Load Game</button>
             <button class="menu-button" data-action="settings">Settings</button>
             <button class="menu-button" data-action="extras">Extras</button>
@@ -234,14 +290,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="background" id="background"></div>
             <div class="character-display" id="character-display"></div>
             <div class="top-controls">
-                <button data-action="ingame-journal" class="control-button"><i class="fas fa-book"></i> Journal</button>
-                <button data-action="ingame-inventory" class="control-button"><i class="fas fa-box-open"></i> Inventory</button>
-                <button data-action="ingame-settings" class="control-button"><i class="fas fa-cog"></i> Settings</button>
-                <button data-action="ingame-save" class="control-button"><i class="fas fa-save"></i> Save</button>
-                <button data-action="ingame-load" class="control-button"><i class="fas fa-folder-open"></i> Load</button>
-                <button data-action="ingame-dialogue-log" class="control-button"><i class="fas fa-clipboard-list"></i> Log</button>
-                <button data-action="return-to-main-menu-confirm" class="control-button"><i class="fas fa-home"></i> Main Menu</button>
-                <button id="music-toggle-button" class="control-button"><i class="fas fa-music"></i> <i class="fas fa-play"></i><i class="fas fa-pause"></i></button>
+                <button data-action="ingame-journal" class="control-button" title="Journal"><i class="fas fa-book"></i></button>
+                <button data-action="ingame-inventory" class="control-button" title="Inventory"><i class="fas fa-box-open"></i></button>
+                <button data-action="ingame-world-map" class="control-button" title="World Map"><i class="fas fa-map-marked-alt"></i></button>
+                <button data-action="ingame-cooking" class="control-button" title="Cooking"><i class="fas fa-utensils"></i></button>
+                <button data-action="ingame-settings" class="control-button" title="Settings"><i class="fas fa-cog"></i></button>
+                <button data-action="ingame-save" class="control-button" title="Save"><i class="fas fa-save"></i></button>
+                <button data-action="ingame-load" class="control-button" title="Load"><i class="fas fa-folder-open"></i></button>
+                <button data-action="ingame-dialogue-log" class="control-button" title="Log"><i class="fas fa-clipboard-list"></i></button>
+                <button data-action="return-to-main-menu-confirm" class="control-button" title="Main Menu"><i class="fas fa-home"></i></button>
+                <button id="music-toggle-button" class="control-button" title="Toggle Music"><i class="fas fa-music"></i> <i class="fas fa-play"></i><i class="fas fa-pause"></i></button>
             </div>
             <div class="dialogue-box" id="dialogue-box">
                 <div class="name-box-wrapper">
@@ -383,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="back-button" data-action="back-from-save-load"><i class="fas fa-arrow-left"></i> Back</button>
             </div>`;
 
-        // MODIFIED: Inject updated journal structure
+        // REVERTED: Journal container for flipbook
         journalContainer.innerHTML = `
             <div class="journal-book-container" id="actual-animated-journal"></div>
             <div class="journal-navigation">
@@ -414,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
         inventoryScreen.innerHTML = `
             <h2 class="sub-screen-title">Inventory</h2>
             <div class="sub-screen-content inventory-content">
-                <div class="item-grid" id="inventory-grid"></div>
+                <!-- Inventory items will be injected here by the script -->
             </div>
             <div class="sub-screen-footer">
                 <button class="back-button" data-action="back-from-inventory"><i class="fas fa-arrow-left"></i> Back</button>
@@ -447,6 +505,28 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="sub-screen-content music-room-content" id="music-room-list"></div>
             <div class="sub-screen-footer">
                 <button class="back-button" data-action="back-to-extras"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>`;
+            
+        worldMapScreen = document.getElementById('world-map-screen');
+        worldMapScreen.innerHTML = `
+            <h2 class="sub-screen-title">World Map</h2>
+            <div class="sub-screen-content">
+                <div class="world-map-container" id="world-map-container">
+                    <!-- Map points will be injected here by the script -->
+                </div>
+            </div>
+            <div class="sub-screen-footer">
+                <button class="back-button" data-action="back-from-subscreen"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>`;
+
+        cookingScreen = document.getElementById('cooking-screen');
+        cookingScreen.innerHTML = `
+             <h2 class="sub-screen-title">Cooking Minigame</h2>
+            <div class="sub-screen-content cooking-container" id="cooking-container">
+                <!-- Cooking UI will be injected here -->
+            </div>
+             <div class="sub-screen-footer">
+                <button class="back-button" data-action="back-from-subscreen"><i class="fas fa-arrow-left"></i> Back</button>
             </div>`;
 
 
@@ -495,15 +575,17 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(`Target screen with ID '${screenId}' not found.`);
         }
 
-        // MODIFIED: Delay renderJournal call
+        if (screenId === 'main-menu') updateMainMenuUI();
         if (screenId === 'save-load-screen') renderSaveLoadScreen('save-tab');
         if (screenId === 'achievements-screen') renderAchievementsScreen();
         if (screenId === 'inventory-screen') renderInventoryScreen();
         if (screenId === 'cg-gallery-screen') renderCGGalleryScreen();
         if (screenId === 'music-room-screen') renderMusicRoomScreen();
+        if (screenId === 'world-map-screen') renderWorldMapScreen();
+        if (screenId === 'cooking-screen') { selectedRecipeId = null; renderCookingScreen(); }
     }
 
-    // --- Game Logic (remains mostly the same) ---
+    // --- Game Logic ---
     let currentBackground = null;
     let currentCharacterSprites = {};
     let typingTimeout = null;
@@ -536,7 +618,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 characterDisplay.appendChild(spriteElement);
                 currentCharacterSprites[characterId] = { element: spriteElement, position: position };
             }
-            spriteElement.src = assets.characters[characterId]?.emotions?.[emotion] || '';
+            const charData = assets.characters[characterId];
+            if (charData && charData.emotions && charData.emotions[emotion]) {
+                spriteElement.src = charData.emotions[emotion];
+            } else if (charData && charData.emotions && charData.emotions.default) {
+                spriteElement.src = charData.emotions.default;
+            } else {
+                 spriteElement.src = 'https://placehold.co/400x700/cccccc/000000?text=Sprite+Not+Found';
+            }
+            
             spriteElement.style.display = 'block';
             spriteElement.style.left = 'auto';
             spriteElement.style.right = 'auto';
@@ -742,15 +832,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 break;
             case 'gainItem':
-                if (!gameState.inventory.has(data.item)) {
-                    gameState.inventory.add(data.item);
-                    showNotification(`Gained: ${assets.items[data.item].name}!`);
-                }
+                gameState.inventory.add(data.item);
+                showNotification(`Gained: ${assets.items[data.item].name}!`);
                 break;
             case 'unlockCG':
                 if (!gameState.unlockedCGs.has(data.cgId)) {
                     gameState.unlockedCGs.add(data.cgId);
                     showNotification(`New CG Unlocked: ${assets.cgs[data.cgId].title}`);
+                    saveGameDataToStorage();
+                }
+                break;
+            case 'unlockMapLocation':
+                if (!gameState.unlockedMapLocations.has(data.locationId)) {
+                    gameState.unlockedMapLocations.add(data.locationId);
+                    showNotification(`New Location Unlocked: ${assets.mapLocations[data.locationId].name}`);
+                    saveGameDataToStorage();
+                }
+                break;
+            case 'learnRecipe':
+                 if (!gameState.unlockedRecipes.has(data.recipeId)) {
+                    gameState.unlockedRecipes.add(data.recipeId);
+                    showNotification(`New Recipe Learned: ${assets.recipes[data.recipeId].name}`);
                     saveGameDataToStorage();
                 }
                 break;
@@ -802,43 +904,148 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Save / Load Logic (remains mostly the same) ---
-    function saveGame(slotIndex, saveName) {
-        const isQuickSave = slotIndex === QUICK_SAVE_SLOT_INDEX;
-        const finalSaveName = isQuickSave ? `Quick Save` : (saveName || `Save Slot ${slotIndex + 1}`);
+    // --- Save / Load & Session Logic ---
+
+    function createSaveData(name) {
+        const serializableGameState = { ...gameState };
         
+        serializableGameState.unlockedCharacters = Array.from(gameState.unlockedCharacters);
+        serializableGameState.seenDialogue = Array.from(gameState.seenDialogue);
+        serializableGameState.inventory = Array.from(gameState.inventory);
+        serializableGameState.unlockedAchievements = Array.from(gameState.unlockedAchievements);
+        serializableGameState.previouslyChosenChoices = Array.from(gameState.previouslyChosenChoices);
+        serializableGameState.unlockedCGs = Array.from(gameState.unlockedCGs);
+        serializableGameState.unlockedTracks = Array.from(gameState.unlockedTracks);
+        serializableGameState.unlockedRecipes = Array.from(gameState.unlockedRecipes);
+        serializableGameState.unlockedMapLocations = Array.from(gameState.unlockedMapLocations);
+
         const saveData = {
-            name: finalSaveName,
+            name: name,
             timestamp: new Date().toLocaleString(),
-            currentStoryIndex: gameState.currentStoryIndex,
-            dialogueHistory: gameState.dialogueHistory,
-            seenDialogue: Array.from(gameState.seenDialogue),
-            characterAffection: gameState.characterAffection,
-            inventory: Array.from(gameState.inventory),
-            unlockedCharacters: Array.from(gameState.unlockedCharacters),
-            unlockedAchievements: Array.from(gameState.unlockedAchievements),
-            previouslyChosenChoices: Array.from(gameState.previouslyChosenChoices),
-            unlockedCGs: Array.from(gameState.unlockedCGs),
-            unlockedTracks: Array.from(gameState.unlockedTracks),
-            availableChoices: Array.from(availableChoices),
-            characterNotes: characterNotes,
-            musicVolume: gameState.musicVolume, sfxVolume: gameState.sfxVolume,
-            typingSpeed: gameState.typingSpeed, skipMode: gameState.skipMode,
-            autoAdvanceSpeed: gameState.autoAdvanceSpeed, dialogueOpacity: gameState.dialogueOpacity,
-            fontSize: gameState.fontSize, useDyslexicFont: gameState.useDyslexicFont,
-            highlightChoices: gameState.highlightChoices,
+            gameState: serializableGameState,
             currentBackground: currentBackground,
             currentCharacterSprites: {},
             currentDialogueText: dialogueTextElement.textContent,
             currentSpeaker: nameBoxElement.textContent,
+            availableChoices: Array.from(availableChoices),
+            characterNotes: characterNotes,
         };
 
         for (const charId in currentCharacterSprites) {
             const spriteInfo = currentCharacterSprites[charId];
             if (spriteInfo.element.style.display !== 'none') {
-                saveData.currentCharacterSprites[charId] = { src: spriteInfo.element.src, position: spriteInfo.position };
+                saveData.currentCharacterSprites[charId] = { 
+                    src: spriteInfo.element.src, 
+                    position: spriteInfo.position 
+                };
             }
         }
+        return saveData;
+    }
+
+    function applySaveData(loadedData) {
+        if (!loadedData || !loadedData.gameState) {
+            showMessageBox('Load Error', 'The save data is corrupted or from an incompatible version.', false);
+            return;
+        }
+
+        gameState = loadedData.gameState;
+        
+        gameState.unlockedCharacters = new Set(gameState.unlockedCharacters || []);
+        gameState.seenDialogue = new Set(gameState.seenDialogue || []);
+        gameState.inventory = new Set(gameState.inventory || []);
+        gameState.unlockedAchievements = new Set(gameState.unlockedAchievements || []);
+        gameState.previouslyChosenChoices = new Set(gameState.previouslyChosenChoices || []);
+        gameState.unlockedCGs = new Set(gameState.unlockedCGs || []);
+        gameState.unlockedTracks = new Set(gameState.unlockedTracks || []);
+        gameState.unlockedRecipes = new Set(gameState.unlockedRecipes || []);
+        gameState.unlockedMapLocations = new Set(gameState.unlockedMapLocations || []);
+
+        availableChoices = new Set(loadedData.availableChoices || []);
+        characterNotes = loadedData.characterNotes || {};
+        currentBackground = loadedData.currentBackground;
+
+        updateAllSettingsUI();
+        updateBackground(currentBackground, false);
+        updateCharacterSprite(null, 'hide-all');
+        for (const charId in loadedData.currentCharacterSprites) {
+            const spriteData = loadedData.currentCharacterSprites[charId];
+            const charInfo = assets.characters[charId];
+            let emotion = 'default';
+            if(charInfo && charInfo.emotions) {
+                emotion = Object.keys(charInfo.emotions).find(key => charInfo.emotions[key] === spriteData.src) || 'default';
+            }
+            updateCharacterSprite(charId, 'show', spriteData.position, emotion);
+        }
+
+        nameBoxElement.textContent = loadedData.currentSpeaker;
+        dialogueTextElement.textContent = loadedData.currentDialogueText;
+        continuePromptElement.style.display = 'block';
+        gameState.dialogueHistoryPointer = gameState.dialogueHistory.length - 1;
+        updateHistoryButtons();
+        dialogueBoxElement.className = 'dialogue-box';
+        const charData = Object.values(assets.characters).find(char => char.name === loadedData.currentSpeaker);
+        dialogueBoxElement.classList.add(charData?.dialog_color_class || 'general-dialogue');
+        
+        gameState.isGameActive = true;
+    }
+
+    function saveSession() {
+        if (!gameState.isGameActive) return;
+        const sessionData = createSaveData('Session');
+        localStorage.setItem('everfallSessionSave', JSON.stringify(sessionData));
+        console.log("Session saved.");
+    }
+
+    function loadSession() {
+        const sessionDataString = localStorage.getItem('everfallSessionSave');
+        if (sessionDataString) {
+            try {
+                const loadedData = JSON.parse(sessionDataString);
+                applySaveData(loadedData);
+                showNotification('Continuing last session.');
+                switchScreen('game-container');
+            } catch (e) {
+                console.error("Failed to parse session data:", e);
+                showMessageBox('Continue', 'Could not load session data. It might be corrupted. Starting a new game.', false);
+                startNewGame();
+            }
+        } else {
+            showMessageBox('Continue', 'No session found. Starting a new game.', false);
+            startNewGame();
+        }
+    }
+
+    function startNewGame() {
+        gameState = {
+            currentStoryIndex: 0, isGameActive: true, typingSpeed: 25, skipMode: 'read', autoAdvanceSpeed: 0,
+            musicVolume: 0.5, sfxVolume: 0.75, dialogueOpacity: 0.8, fontSize: 'normal', useDyslexicFont: false,
+            highlightChoices: true, chosenOutfit: null, unlockedCharacters: new Set(['general']),
+            dialogueHistory: [], dialogueHistoryPointer: -1, seenDialogue: new Set(), isTyping: false,
+            waitingForInput: false, skipTypingRequest: false, autoAdvanceTimeoutId: null, currentDialogueText: '', currentSpeaker: '', isOverlayOpen: false,
+            characterAffection: { willow: 0, nova: 0, amaryllis: 0, kelly: 0, ray: 0, clay: 0, fenrir: 0, cerberus: 0, dean: 0 },
+            inventory: new Set(),
+            unlockedAchievements: new Set(JSON.parse(localStorage.getItem('everfallAchievements') || '[]')),
+            unlockedCGs: new Set(JSON.parse(localStorage.getItem('everfallCGs') || '[]')),
+            unlockedTracks: new Set(JSON.parse(localStorage.getItem('everfallTracks') || '[]')),
+            unlockedRecipes: new Set(JSON.parse(localStorage.getItem('everfallRecipes') || '["hearty_stew"]')),
+            unlockedMapLocations: new Set(JSON.parse(localStorage.getItem('everfallMapLocations') || '["everfall_city"]')),
+            previouslyChosenChoices: new Set(),
+        };
+        availableChoices = new Set();
+        characterNotes = {'general': ''};
+        localStorage.removeItem('everfallSessionSave');
+        updateMainMenuUI();
+        switchScreen('game-container', false, () => {
+             processStoryPoint();
+        });
+    }
+
+    function saveGame(slotIndex, saveName) {
+        const isQuickSave = slotIndex === QUICK_SAVE_SLOT_INDEX;
+        const finalSaveName = isQuickSave ? `Quick Save` : (saveName || `Save Slot ${slotIndex + 1}`);
+        
+        const saveData = createSaveData(finalSaveName);
         saveData.thumbnail = generateSaveThumbnail();
         saveSlots[slotIndex] = saveData;
         localStorage.setItem('everfallSaveSlots', JSON.stringify(saveSlots));
@@ -852,55 +1059,9 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessageBox('Load Error', 'No data found in this slot.', false);
             return;
         }
-
-        Object.assign(gameState, {
-            currentStoryIndex: loadedData.currentStoryIndex,
-            dialogueHistory: loadedData.dialogueHistory || [],
-            seenDialogue: new Set(loadedData.seenDialogue || []),
-            characterAffection: loadedData.characterAffection || {},
-            inventory: new Set(loadedData.inventory || []),
-            unlockedCharacters: new Set(loadedData.unlockedCharacters || ['general']),
-            unlockedAchievements: new Set(loadedData.unlockedAchievements || []),
-            previouslyChosenChoices: new Set(loadedData.previouslyChosenChoices || []),
-            unlockedCGs: new Set(loadedData.unlockedCGs || []),
-            unlockedTracks: new Set(loadedData.unlockedTracks || []),
-            musicVolume: loadedData.musicVolume ?? 0.5,
-            sfxVolume: loadedData.sfxVolume ?? 0.75,
-            typingSpeed: loadedData.typingSpeed ?? 25,
-            skipMode: loadedData.skipMode || 'read',
-            autoAdvanceSpeed: loadedData.autoAdvanceSpeed ?? 0,
-            dialogueOpacity: loadedData.dialogueOpacity ?? 0.8,
-            fontSize: loadedData.fontSize || 'normal',
-            useDyslexicFont: loadedData.useDyslexicFont || false,
-            highlightChoices: loadedData.highlightChoices ?? true,
-            currentDialogueText: loadedData.currentDialogueText || '',
-            currentSpeaker: loadedData.currentSpeaker || '',
-        });
-        availableChoices = new Set(loadedData.availableChoices || []);
-        characterNotes = loadedData.characterNotes || {};
-        currentBackground = loadedData.currentBackground;
-
-        updateAllSettingsUI();
-        updateBackground(currentBackground, false);
-        updateCharacterSprite(null, 'hide-all');
-        for (const charId in loadedData.currentCharacterSprites) {
-            const spriteData = loadedData.currentCharacterSprites[charId];
-            updateCharacterSprite(charId, 'show', spriteData.position);
-        }
-
-        nameBoxElement.textContent = gameState.currentSpeaker;
-        dialogueTextElement.textContent = gameState.currentDialogueText;
-        continuePromptElement.style.display = 'block';
-        gameState.dialogueHistoryPointer = gameState.dialogueHistory.length - 1;
-        updateHistoryButtons();
-        dialogueBoxElement.className = 'dialogue-box';
-        const charData = Object.values(assets.characters).find(char => char.name === gameState.currentSpeaker);
-        dialogueBoxElement.classList.add(charData?.dialog_color_class || 'general-dialogue');
-        
+        applySaveData(loadedData);
         showNotification(`Loaded: ${loadedData.name}`);
-        switchScreen('game-container', false, () => {
-            gameState.isGameActive = true;
-        });
+        switchScreen('game-container');
     }
     
     function generateSaveThumbnail() {
@@ -933,19 +1094,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadGameDataFromStorage() {
         const savedData = localStorage.getItem('everfallSaveSlots');
-        if (savedData) saveSlots = JSON.parse(savedData);
-        const globalAchievements = localStorage.getItem('everfallAchievements');
-        if (globalAchievements) gameState.unlockedAchievements = new Set(JSON.parse(globalAchievements));
-        const globalCGs = localStorage.getItem('everfallCGs');
-        if(globalCGs) gameState.unlockedCGs = new Set(JSON.parse(globalCGs));
-        const globalTracks = localStorage.getItem('everfallTracks');
-        if(globalTracks) gameState.unlockedTracks = new Set(JSON.parse(globalTracks));
+        if (savedData) {
+            try {
+                saveSlots = JSON.parse(savedData);
+            } catch(e) {
+                console.error("Could not parse save slots. Resetting.", e);
+                saveSlots = Array(10).fill(null);
+                localStorage.removeItem('everfallSaveSlots');
+            }
+        }
+        gameState.unlockedAchievements = new Set(JSON.parse(localStorage.getItem('everfallAchievements') || '[]'));
+        gameState.unlockedCGs = new Set(JSON.parse(localStorage.getItem('everfallCGs') || '[]'));
+        gameState.unlockedTracks = new Set(JSON.parse(localStorage.getItem('everfallTracks') || '[]'));
+        gameState.unlockedMapLocations = new Set(JSON.parse(localStorage.getItem('everfallMapLocations') || '["everfall_city"]'));
+        gameState.unlockedRecipes = new Set(JSON.parse(localStorage.getItem('everfallRecipes') || '["hearty_stew"]'));
     }
 
     function saveGameDataToStorage() {
         localStorage.setItem('everfallAchievements', JSON.stringify(Array.from(gameState.unlockedAchievements)));
         localStorage.setItem('everfallCGs', JSON.stringify(Array.from(gameState.unlockedCGs)));
         localStorage.setItem('everfallTracks', JSON.stringify(Array.from(gameState.unlockedTracks)));
+        localStorage.setItem('everfallMapLocations', JSON.stringify(Array.from(gameState.unlockedMapLocations)));
+        localStorage.setItem('everfallRecipes', JSON.stringify(Array.from(gameState.unlockedRecipes)));
         localStorage.setItem('everfallCharacterNotes', JSON.stringify(characterNotes));
     }
 
@@ -964,10 +1134,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!slot) slotDiv.classList.add('empty');
                 
                 let isQuickSaveSlot = i === QUICK_SAVE_SLOT_INDEX;
-                let defaultName = isQuickSaveSlot ? `Slot ${i + 1} (Quick Save)` : `Slot ${i + 1} (Empty)`;
+                let defaultName = isQuickSaveSlot ? `Slot ${i + 1} (Quick Save)` : `Slot ${i + 1}`;
 
                 slotDiv.innerHTML = `
-                    <div class="save-thumbnail-container">${slot ? slot.thumbnail : '<div class="save-thumbnail empty-thumbnail"></div>'}</div>
+                    <div class="save-thumbnail-container">${slot && slot.thumbnail ? slot.thumbnail : '<div class="save-thumbnail empty-thumbnail"></div>'}</div>
                     <div class="slot-info">
                         <input type="text" class="save-name-input" value="${slot ? slot.name : defaultName}" ${activeTab === 'load-tab' || isQuickSaveSlot ? 'readonly' : ''}>
                         <p>${slot ? `Saved: ${slot.timestamp}` : 'No data saved.'}</p>
@@ -1003,7 +1173,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- Settings UI & Logic (remains the same) ---
+    // --- UI Update Functions ---
+    function updateMainMenuUI() {
+        const startButton = mainMenu.querySelector('[data-action="start-game-prompt"]');
+        if (startButton) {
+            const sessionExists = localStorage.getItem('everfallSessionSave') !== null;
+            startButton.textContent = sessionExists ? 'Continue' : 'Start Game';
+        }
+    }
+
     function updateAllSettingsUI() {
         updateRadioSetting('typing-speed-options', gameState.typingSpeed.toString());
         updateRadioSetting('skip-mode-options', gameState.skipMode);
@@ -1052,13 +1230,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add(`font-size-${gameState.fontSize}`);
     }
 
-    // --- REPLACED: Journal, Extras, and other Screens ---
+    // --- Journal, Extras, and other Screens ---
     
-function renderJournal() {
-        // This guard clause is correct and stops the function from ever running again.
+    // REVERTED: Journal now uses the flipbook implementation
+    function renderJournal() {
         if (isJournalInitialized) return;
-
-        // This check for an existing flipbook is no longer needed, but is safe to keep.
         if ($flipbook && $flipbook.data().turn) {
             $flipbook.turn('destroy');
         }
@@ -1067,17 +1243,14 @@ function renderJournal() {
         let pagesHtml = '';
         charIdToPageMap = {};
         
-        // Start building the HTML string, starting with the front cover.
         pagesHtml += `<div class="page hard"><h3>Everfall Journal</h3></div>`;
         
-        // Build the Table of Contents HTML...
         let tocListHtml = assets.journalCharacters.map(charId => {
             const charName = assets.characters[charId].name;
             const isUnlocked = gameState.unlockedCharacters.has(charId);
             return `<li data-char-id="${charId}" class="${isUnlocked ? '' : 'locked'}">${isUnlocked ? charName : '??? <i class="fas fa-lock"></i>'}</li>`;
         }).join('');
 
-        // ...and add the full Contents page to the HTML string.
         pagesHtml += `<div class="page journal-page toc-page"><h2>Contents</h2><ul id="journal-toc-list">${tocListHtml}</ul></div>`;
         
         let pageCounter = 3; 
@@ -1095,20 +1268,13 @@ function renderJournal() {
                     <h4>Player Notes</h4>
                     <textarea class="journal-textarea" id="notes-textarea-${charId}" placeholder="Your notes on ${charData.name}..."></textarea>`;
             }
-            // Add this character's page to the HTML string.
             pagesHtml += `<div class="page journal-page" data-char-id="${charId}"><h3>${charData.name}</h3><div class="page-content">${characterPageContent}</div></div>`;
         });
 
-        // ADDED: The closing back cover was missing.
         pagesHtml += `<div class="page hard"></div>`;
-
-        // MOVED: This now happens only once at the end, with the complete HTML.
         journalBookContainer.innerHTML = pagesHtml;
         
-        // MOVED: This also happens at the end, after the HTML is in the document.
         requestAnimationFrame(initializeFlipbook);
-        
-        // MOVED: Set the flag once, at the very end of the function.
         isJournalInitialized = true;
     }
 
@@ -1134,7 +1300,6 @@ function renderJournal() {
         $flipbook.turn('page', 1);
     }
     
-    // NEW HELPER FUNCTIONS
     function setupJournalEventListeners() {
         const tocList = document.getElementById('journal-toc-list');
         if (tocList) {
@@ -1151,21 +1316,8 @@ function renderJournal() {
         }
     }
 
-    function goNextJournalPage() {
-        if ($flipbook) {
-            $flipbook.turn('next');
-        }
-    }
-
-    function goPrevJournalPage() {
-        if ($flipbook) {
-            $flipbook.turn('previous');
-        }
-    }
-
-    function updateJournalNavigationButtons() {
-        // Placeholder for future logic, e.g., disabling buttons on first/last page
-    }
+    function goNextJournalPage() { if ($flipbook) $flipbook.turn('next'); }
+    function goPrevJournalPage() { if ($flipbook) $flipbook.turn('previous'); }
 
     function renderDialogueLog() {
         const logContent = document.getElementById('dialogue-log-content');
@@ -1203,18 +1355,34 @@ function renderJournal() {
     }
 
     function renderInventoryScreen() {
-        const grid = document.getElementById('inventory-grid');
+        const inventoryContent = inventoryScreen.querySelector('.sub-screen-content');
         if (gameState.inventory.size === 0) {
-            grid.innerHTML = '<p class="empty-inventory-message">Inventory is empty.</p>'; return;
+            inventoryContent.innerHTML = '<p class="empty-inventory-message">Inventory is empty.</p>'; return;
         }
-        grid.innerHTML = Array.from(gameState.inventory).map(itemId => {
+        const categorizedItems = { food: [], ingredient: [], clue: [], key: [], other: [] };
+        gameState.inventory.forEach(itemId => {
             const item = assets.items[itemId];
-            return `<div class="inventory-item">
+            if (!item) return;
+            const category = item.type || 'other';
+            if (categorizedItems[category]) categorizedItems[category].push(item);
+            else categorizedItems.other.push(item);
+        });
+        let html = '';
+        const categoryOrder = { food: 'Cooked Dishes', ingredient: 'Ingredients', clue: 'Clue Items', key: 'Key Items', other: 'Other' };
+        for (const category in categoryOrder) {
+            if (categorizedItems[category].length > 0) {
+                html += `<div class="inventory-section"><h3>${categoryOrder[category]}</h3><div class="item-grid">`;
+                html += categorizedItems[category].map(item => `
+                    <div class="inventory-item">
                         <img src="${item.thumbnail}" alt="${item.name}" class="item-thumbnail">
                         <h4 class="item-name">${item.name}</h4>
                         <p class="item-description">${item.description}</p>
-                    </div>`;
-        }).join('');
+                        <span class="item-type-tag">${item.type}</span>
+                    </div>`).join('');
+                html += `</div></div>`;
+            }
+        }
+        inventoryContent.innerHTML = html;
     }
 
     function renderCGGalleryScreen() {
@@ -1239,28 +1407,108 @@ function renderJournal() {
         }).join('');
     }
 
+    function renderWorldMapScreen() {
+        const container = document.getElementById('world-map-container');
+        container.innerHTML = '';
+        Object.values(assets.mapLocations).forEach(loc => {
+            const isUnlocked = gameState.unlockedMapLocations.has(loc.id);
+            const point = document.createElement('div');
+            point.className = `map-point ${isUnlocked ? '' : 'locked'}`;
+            point.style.top = loc.coords.top;
+            point.style.left = loc.coords.left;
+            point.dataset.locationId = loc.id;
+            point.innerHTML = `<i class="fas fa-map-marker-alt"></i><span class="map-point-tooltip">${loc.name}<br>${isUnlocked ? '(Click to explore)' : '(Location unknown)'}</span>`;
+            if (isUnlocked) {
+                point.onclick = () => exploreMapLocation(loc.id);
+            }
+            container.appendChild(point);
+        });
+    }
+
+    function exploreMapLocation(locationId) {
+        const location = assets.mapLocations[locationId];
+        let message = `<p>${location.lore}</p>`;
+        if (location.gatherableIngredients && location.gatherableIngredients.length > 0) {
+            if (Math.random() > 0.5) {
+                const foundIngredientId = location.gatherableIngredients[Math.floor(Math.random() * location.gatherableIngredients.length)];
+                const ingredient = assets.items[foundIngredientId];
+                gameState.inventory.add(foundIngredientId);
+                message += `<br><p style="color: var(--color-fern-glow);">You found: ${ingredient.name}!</p>`;
+                showNotification(`Found: ${ingredient.name}`);
+            } else {
+                message += `<br><p>You searched for ingredients but found nothing this time.</p>`;
+            }
+        }
+        showMessageBox(`Exploring: ${location.name}`, message, false);
+    }
+    
+    let selectedRecipeId = null;
+    function renderCookingScreen() {
+        const container = document.getElementById('cooking-container');
+        const unlockedRecipesHTML = Array.from(gameState.unlockedRecipes).map(id => {
+            const recipe = assets.recipes[id];
+            return `<div class="recipe-item ${selectedRecipeId === id ? 'selected' : ''}" data-recipe-id="${id}">${recipe.name}</div>`;
+        }).join('');
+        const lockedRecipesCount = Object.keys(assets.recipes).length - gameState.unlockedRecipes.size;
+        const lockedRecipesHTML = lockedRecipesCount > 0 ? `<div class="recipe-item locked">${lockedRecipesCount} more recipes to discover...</div>` : '';
+        let detailsHTML = '<h3>Recipe Details</h3><div class="recipe-details-content">';
+        if (selectedRecipeId) {
+            const recipe = assets.recipes[selectedRecipeId];
+            detailsHTML += `<p>${recipe.description}</p><h4>Ingredients:</h4><ul>`;
+            let canCook = true;
+            for (const ingId in recipe.ingredients) {
+                const requiredQty = recipe.ingredients[ingId];
+                const hasItem = gameState.inventory.has(ingId); 
+                if (!hasItem) canCook = false;
+                detailsHTML += `<li class="${hasItem ? 'has-ingredient' : 'missing-ingredient'}">${requiredQty}x ${assets.items[ingId].name} ${hasItem ? '✔' : '✖'}</li>`;
+            }
+            detailsHTML += '</ul>';
+            detailsHTML += `<button class="cook-button" data-recipe-id="${recipe.id}" ${canCook ? '' : 'disabled'}>Cook It!</button>`;
+        } else {
+            detailsHTML += '<p>Select a recipe to see the details.</p>';
+        }
+        detailsHTML += '</div>';
+        const ingredients = Array.from(gameState.inventory).map(id => assets.items[id]).filter(item => item.type === 'ingredient');
+        const ingredientsHTML = ingredients.length > 0 ? ingredients.map(item => `<div class="ingredient-item">${item.name}</div>`).join('') : '<p>No ingredients.</p>';
+        container.innerHTML = `
+            <div class="cooking-section"><h3>Recipe Book</h3><div class="scrollable-list">${unlockedRecipesHTML}${lockedRecipesHTML}</div></div>
+            <div class="cooking-section" id="recipe-details-section">${detailsHTML}</div>
+            <div class="cooking-section"><h3>Available Ingredients</h3><div class="scrollable-list">${ingredientsHTML}</div></div>`;
+    }
+
     // --- Utility Functions ---
-    function showMessageBox(title, message, isConfirm, onConfirm) {
+    // UPDATED: More flexible message box for custom buttons
+    function showCustomMessageBox(title, message, buttons) {
         const overlay = document.createElement('div');
         overlay.className = 'message-box-overlay';
         overlay.innerHTML = `<div class="message-box"><h3>${title}</h3><p>${message}</p><div class="button-group"></div></div>`;
         const buttonGroup = overlay.querySelector('.button-group');
-        if (isConfirm) {
-            const yesBtn = document.createElement('button');
-            yesBtn.textContent = 'Yes';
-            yesBtn.onclick = () => { onConfirm(); overlay.remove(); };
-            buttonGroup.appendChild(yesBtn);
-            const noBtn = document.createElement('button');
-            noBtn.textContent = 'No';
-            noBtn.onclick = () => overlay.remove();
-            buttonGroup.appendChild(noBtn);
-        } else {
-            const okBtn = document.createElement('button');
-            okBtn.textContent = 'OK';
-            okBtn.onclick = () => overlay.remove();
-            buttonGroup.appendChild(okBtn);
-        }
+        
+        buttons.forEach(buttonInfo => {
+            const btn = document.createElement('button');
+            btn.textContent = buttonInfo.text;
+            btn.onclick = () => {
+                if (buttonInfo.action) buttonInfo.action();
+                overlay.remove();
+            };
+            if (buttonInfo.disabled) {
+                btn.disabled = true;
+            }
+            buttonGroup.appendChild(btn);
+        });
+
         document.body.appendChild(overlay);
+    }
+
+    function showMessageBox(title, message, isConfirm, onConfirm) {
+        const buttons = [];
+        if (isConfirm) {
+            buttons.push({ text: 'Yes', action: onConfirm });
+            buttons.push({ text: 'No' });
+        } else {
+            buttons.push({ text: 'OK' });
+        }
+        showCustomMessageBox(title, message, buttons);
     }
     
     function unlockAchievement(id) {
@@ -1278,7 +1526,11 @@ function renderJournal() {
     }
 
     function showEndScreen() {
-        showMessageBox('The End', 'Thank you for playing Everfall.', false, () => switchScreen('main-menu'));
+        gameState.isGameActive = false;
+        showCustomMessageBox('The End', 'Thank you for playing Everfall.', [{
+            text: 'Return to Main Menu',
+            action: () => switchScreen('main-menu')
+        }]);
     }
 
     // --- Event Listeners ---
@@ -1298,23 +1550,28 @@ function renderJournal() {
                 if (event.key === 'ArrowDown') { event.preventDefault(); showDialogueFromHistory(gameState.dialogueHistoryPointer + 1); }
             }
             if (event.key === 'Escape') {
-                if (currentScreen === 'game-container') switchScreen('settings-screen', true);
-                else if (currentScreen !== 'main-menu' && gameState.isGameActive) switchScreen('game-container');
-                else if (currentScreen !== 'main-menu') switchScreen('main-menu');
+                if (currentScreen === 'game-container') {
+                    showCustomMessageBox('Return to Menu', 'Your progress for the current session will be saved.', [{
+                        text: 'OK',
+                        action: () => {
+                            saveSession();
+                            gameState.isGameActive = false;
+                            switchScreen('main-menu');
+                        }
+                    }]);
+                } else if (currentScreen !== 'main-menu' && gameState.isGameActive) {
+                    switchScreen('game-container');
+                } else if (currentScreen !== 'main-menu') {
+                    switchScreen('main-menu');
+                }
             }
             if(gameState.isGameActive && !gameState.isOverlayOpen) {
                 if (event.key === 'F5') { event.preventDefault(); saveGame(QUICK_SAVE_SLOT_INDEX); }
                 if (event.key === 'F9') { event.preventDefault(); loadGame(QUICK_SAVE_SLOT_INDEX); }
             }
-            // ADDED: Journal keydown listener
             if (currentScreen === 'journal-container' && $flipbook && $flipbook.data().turn) {
-                if (event.key === 'ArrowLeft') {
-                    event.preventDefault();
-                    goPrevJournalPage();
-                } else if (event.key === 'ArrowRight') {
-                    event.preventDefault();
-                    goNextJournalPage();
-                }
+                if (event.key === 'ArrowLeft') { event.preventDefault(); goPrevJournalPage(); } 
+                else if (event.key === 'ArrowRight') { event.preventDefault(); goNextJournalPage(); }
             }
         });
 
@@ -1327,33 +1584,40 @@ function renderJournal() {
             const replayBtn = event.target.closest('.replay-button');
             const cgItem = event.target.closest('.gallery-item:not(.locked)');
             const musicBtn = event.target.closest('.play-music-btn');
+            const recipeItem = event.target.closest('.recipe-item:not(.locked)');
+            const cookButton = event.target.closest('.cook-button');
 
             if (actionTarget) {
                 const action = actionTarget.dataset.action;
                 const actions = {
-                    'start-game': () => {
-                        Object.assign(gameState, { currentStoryIndex: 0, dialogueHistory: [], previouslyChosenChoices: new Set(), inventory: new Set() });
-                        Object.keys(gameState.characterAffection).forEach(k => gameState.characterAffection[k] = 0);
-                        switchScreen('game-container', false, () => { gameState.isGameActive = true; processStoryPoint(); });
+                    'start-game-prompt': () => {
+                        const sessionExists = localStorage.getItem('everfallSessionSave') !== null;
+                        showCustomMessageBox('Everfall', 'Welcome back.', [
+                            { text: 'Continue', action: loadSession, disabled: !sessionExists },
+                            { text: 'New Game', action: startNewGame }
+                        ]);
                     },
                     'load-game-menu': () => { switchScreen('save-load-screen'); renderSaveLoadScreen('load-tab'); },
                     'settings': () => switchScreen('settings-screen'), 'controls': () => switchScreen('controls-screen'),
                     'about': () => switchScreen('about-screen'), 'achievements': () => switchScreen('achievements-screen'),
                     'extras': () => switchScreen('extras-screen'), 'cg-gallery': () => switchScreen('cg-gallery-screen'),
                     'music-room': () => switchScreen('music-room-screen'),
-                    'quit-game': () => showMessageBox('Quit', 'Return to main menu?', true, () => { gameState.isGameActive = false; switchScreen('main-menu'); }),
+                    'quit-game': () => showMessageBox('Quit', 'Are you sure you want to quit?', true, () => window.close()),
                     'ingame-settings': () => switchScreen('settings-screen', true),
                     'ingame-save': () => { switchScreen('save-load-screen', true); renderSaveLoadScreen('save-tab'); },
                     'ingame-load': () => { switchScreen('save-load-screen', true); renderSaveLoadScreen('load-tab'); },
-                    'ingame-journal': () => {
-                    // First, manually show the dimming backdrop
-                    modalBackdrop.classList.add('visible');
-                    // Now, show the journal screen, but tell switchScreen it's NOT a standard modal
-                    switchScreen('journal-container', false); 
-                    },
+                    'ingame-journal': () => { switchScreen('journal-container', true); renderJournal(); },
                     'ingame-inventory': () => switchScreen('inventory-screen', true),
                     'ingame-dialogue-log': () => { switchScreen('dialogue-log-screen', true); renderDialogueLog(); },
-                    'return-to-main-menu-confirm': () => showMessageBox('Return to Menu', 'Unsaved progress will be lost.', true, () => { gameState.isGameActive = false; switchScreen('main-menu'); }),
+                    'ingame-world-map': () => { switchScreen('world-map-screen', true); renderWorldMapScreen(); },
+                    'ingame-cooking': () => { selectedRecipeId = null; switchScreen('cooking-screen', true); renderCookingScreen(); },
+                    'return-to-main-menu-confirm': () => {
+                        showMessageBox('Return to Menu', 'Your progress for the current session will be saved.', true, () => {
+                            saveSession();
+                            gameState.isGameActive = false;
+                            switchScreen('main-menu');
+                        });
+                    },
                     'back-from-subscreen': () => gameState.isGameActive ? switchScreen('game-container') : switchScreen('main-menu'),
                     'back-to-extras': () => switchScreen('extras-screen'),
                     'back-from-save-load': () => gameState.isGameActive ? switchScreen('game-container') : switchScreen('main-menu'),
@@ -1361,20 +1625,11 @@ function renderJournal() {
                     'back-from-achievements': () => gameState.isGameActive ? switchScreen('game-container') : switchScreen('main-menu'),
                     'back-from-inventory': () => switchScreen('game-container'),
                     'music-toggle-button': () => { backgroundMusic.paused ? backgroundMusic.play() : backgroundMusic.pause(); updateMusicToggleButton(); },
-                    'reset-game-prompt': () => showMessageBox('Reset ALL Progress?', 'This will erase all saves and unlocked content.', true, () => { localStorage.clear(); window.location.reload(); }),
-                    // MODIFIED: Close journal action
+                    'reset-game-prompt': () => showMessageBox('Reset ALL Progress?', 'This will erase all saves and unlocked content. This cannot be undone.', true, () => { localStorage.clear(); window.location.reload(); }),
                     'close-journal': () => {
-                    // Manually hide the dimming backdrop
-                    modalBackdrop.classList.remove('visible');
-
-                    // Hide the journal container by switching back to the game or main menu
-                    if (gameState.isGameActive) {
-                    switchScreen('game-container');
-                    } else {
-                    switchScreen('main-menu');
-                    }
+                        if (gameState.isGameActive) switchScreen('game-container');
+                        else switchScreen('main-menu');
                     },
-                    // ADDED: Journal navigation actions
                     'prev-journal-page': () => goPrevJournalPage(),
                     'next-journal-page': () => goNextJournalPage(),
                 };
@@ -1392,12 +1647,11 @@ function renderJournal() {
             } else if (replayBtn) {
                  const nextSceneId = replayBtn.dataset.nextSceneId;
                  showMessageBox('Replay Choice', `Replay from this point? Your current story progress will be reset to here.`, true, () => {
-                    gameState.currentStoryIndex = story.findIndex(s => s.id === nextSceneId);
-                    if (gameState.currentStoryIndex !== -1) {
-                        gameState.dialogueHistory = [];
-                        showNotification(`Replaying from: ${nextSceneId}`);
-                        switchScreen('game-container', false, () => { gameState.isGameActive = true; processStoryPoint(); });
-                    }
+                    const loadedData = createSaveData('Replay'); // Create a temporary save
+                    loadedData.gameState.currentStoryIndex = story.findIndex(s => s.id === nextSceneId);
+                    applySaveData(loadedData); // Apply it
+                    showNotification(`Replaying from: ${nextSceneId}`);
+                    switchScreen('game-container');
                  });
             } else if (cgItem) {
                 showMessageBox(cgItem.dataset.cgTitle, `<img src="${cgItem.dataset.fullSrc}" style="width:100%; border-radius: 5px;">`, false);
@@ -1405,10 +1659,22 @@ function renderJournal() {
                 backgroundMusic.src = musicBtn.dataset.trackUrl;
                 backgroundMusic.play();
                 updateMusicToggleButton();
+            } else if (recipeItem) {
+                selectedRecipeId = recipeItem.dataset.recipeId;
+                renderCookingScreen();
+            } else if (cookButton) {
+                const recipeId = cookButton.dataset.recipeId;
+                const recipe = assets.recipes[recipeId];
+                for (const ingId in recipe.ingredients) {
+                    gameState.inventory.delete(ingId);
+                }
+                gameState.inventory.add(recipe.result);
+                showNotification(`You cooked: ${assets.items[recipe.result].name}!`);
+                selectedRecipeId = null;
+                renderCookingScreen();
             }
         });
 
-        // Settings Listeners
         document.getElementById('settings-screen').addEventListener('change', (event) => {
             const target = event.target;
             if (target.name === 'typing-speed') gameState.typingSpeed = parseInt(target.value);
@@ -1424,12 +1690,10 @@ function renderJournal() {
             const rect = slider.getBoundingClientRect();
             const value = Math.ceil(((event.clientX - rect.left) / rect.width) * 10);
             const type = slider.dataset.settingType;
-            
             if(type === 'musicVolume') { gameState.musicVolume = value / 10; backgroundMusic.volume = gameState.musicVolume; }
             if(type === 'sfxVolume') gameState.sfxVolume = value / 10;
             if(type === 'autoAdvanceSpeed') gameState.autoAdvanceSpeed = value;
             if(type === 'dialogueOpacity') { gameState.dialogueOpacity = value / 10; updateDialogueOpacity(); }
-            
             updateBlockSlider(slider.id, value);
         });
     }
@@ -1438,10 +1702,10 @@ function renderJournal() {
     function initialize() {
         injectContent();
         loadGameDataFromStorage();
-        renderJournal(); // <-- ADD THIS LINE to build the journal on startup
         setupEventListeners();
         updateAllSettingsUI();
         switchScreen('main-menu');
-}
+    }
+
     initialize();
 });

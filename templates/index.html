@@ -1,0 +1,293 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Everfall: A Visual Novel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+
+    <div class="main-menu-container visible" id="main-menu">
+        <h1 class="menu-title">Everfall</h1>
+        <button class="menu-button" data-action="start-game-prompt">Start Game</button>
+        <button class="menu-button" data-action="load-game-menu">Load Game</button>
+        <button class="menu-button" data-action="settings">Settings</button>
+        <button class="menu-button" data-action="extras">Extras</button>
+        <button class="menu-button" data-action="achievements">Achievements</button>
+        <button class="menu-button" data-action="controls">Controls</button>
+        <button class="menu-button" data-action="about">About</button>
+        <button class="menu-button" data-action="quit-game">Quit</button>
+    </div>
+
+    <div class="game-container" id="game-container">
+        <div class="background" id="background"></div>
+        <div class="character-display" id="character-display"></div>
+        
+        <div class="top-controls">
+            <button data-action="ingame-journal" class="control-button" title="Journal"><i class="fas fa-book"></i></button>
+            <button data-action="ingame-inventory" class="control-button" title="Inventory"><i class="fas fa-box-open"></i></button>
+            <button data-action="ingame-world-map" class="control-button" title="World Map"><i class="fas fa-map-marked-alt"></i></button>
+            <button data-action="ingame-cooking" class="control-button" title="Cooking"><i class="fas fa-utensils"></i></button>
+            <button data-action="ingame-settings" class="control-button" title="Settings"><i class="fas fa-cog"></i></button>
+            <button data-action="ingame-save" class="control-button" title="Save"><i class="fas fa-save"></i></button>
+            <button data-action="ingame-load" class="control-button" title="Load"><i class="fas fa-folder-open"></i></button>
+            <button data-action="ingame-dialogue-log" class="control-button" title="Log"><i class="fas fa-clipboard-list"></i></button>
+            <button data-action="return-to-main-menu-confirm" class="control-button" title="Main Menu"><i class="fas fa-home"></i></button>
+            <button id="music-toggle-button" class="control-button" title="Toggle Music"><i class="fas fa-music"></i> <i class="fas fa-play"></i><i class="fas fa-pause"></i></button>
+        </div>
+
+        <div class="dialogue-box" id="dialogue-box">
+            <div class="name-box-wrapper">
+                <div class="name-box" id="name-box"></div>
+                <div class="affection-indicator" id="affection-indicator"><i class="fas fa-heart"></i></div>
+            </div>
+            <p class="dialogue-text" id="dialogue-text"></p>
+            <div class="continue-prompt" id="continue-prompt">Click to continue...</div>
+            <div class="history-buttons">
+                <button id="prev-dialogue-button" class="history-button" disabled><i class="fas fa-chevron-up"></i></button>
+                <button id="next-dialogue-button" class="history-button" disabled><i class="fas fa-chevron-down"></i></button>
+            </div>
+        </div>
+        <div class="choices-container" id="choices-container"></div>
+    </div>
+
+    <div id="modal-backdrop" class="modal-backdrop"></div>
+
+    <div class="sub-screen" id="settings-screen">
+        <h2 class="sub-screen-title">Settings</h2>
+        <div class="sub-screen-content settings-grid">
+            <div class="settings-section">
+                <h3><i class="fas fa-font"></i> Text Speed</h3>
+                <div class="setting-item" id="typing-speed-options">
+                        <label class="custom-radio"><input type="radio" name="typing-speed" value="50"> Slow</label>
+                        <label class="custom-radio"><input type="radio" name="typing-speed" value="25"> Normal</label>
+                        <label class="custom-radio"><input type="radio" name="typing-speed" value="10"> Fast</label>
+                        <label class="custom-radio"><input type="radio" name="typing-speed" value="0"> Instant</label>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3><i class="fas fa-forward"></i> Skip Mode</h3>
+                <div class="setting-item" id="skip-mode-options">
+                    <label class="custom-radio"><input type="radio" name="skip-mode" value="read"> Read Dialogue</label>
+                    <label class="custom-radio"><input type="radio" name="skip-mode" value="all"> All Dialogue</label>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3><i class="fas fa-music"></i> Music Volume</h3>
+                <div class="setting-item">
+                    <div class="block-slider" id="music-volume-slider" data-setting-type="musicVolume">
+                        <div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+                        <div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3><i class="fas fa-volume-up"></i> SFX Volume</h3>
+                <div class="setting-item">
+                    <div class="block-slider" id="sfx-volume-slider" data-setting-type="sfxVolume">
+                        <div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+                        <div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3><i class="fas fa-fast-forward"></i> Auto-Forward Speed</h3>
+                <div class="setting-item">
+                        <div class="block-slider" id="auto-forward-slider" data-setting-type="autoAdvanceSpeed">
+                        <div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+                        <div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+                    </div>
+                    <span class="slider-label">Off / Slow <-> Fast</span>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3><i class="fas fa-eye"></i> Dialogue Box Opacity</h3>
+                    <div class="setting-item">
+                    <div class="block-slider" id="dialogue-opacity-slider" data-setting-type="dialogueOpacity">
+                        <div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+                        <div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div><div class="block"></div>
+                    </div>
+                    <span class="slider-label">Light <-> Opaque</span>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3><i class="fas fa-text-height"></i> Font Options</h3>
+                <div class="setting-item" id="font-size-options">
+                    <label>Font Size:</label>
+                        <label class="custom-radio"><input type="radio" name="font-size" value="small"> Small</label>
+                        <label class="custom-radio"><input type="radio" name="font-size" value="normal"> Normal</label>
+                        <label class="custom-radio"><input type="radio" name="font-size" value="large"> Large</label>
+                </div>
+                    <div class="setting-item">
+                    <label class="custom-toggle">
+                        <input type="checkbox" id="dyslexic-font-toggle">
+                        <span class="slider"></span>
+                        Use Dyslexic-Friendly Font
+                    </label>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3><i class="fas fa-check-double"></i> UI Options</h3>
+                <div class="setting-item">
+                    <label class="custom-toggle">
+                        <input type="checkbox" id="highlight-choices-toggle">
+                        <span class="slider"></span>
+                        Highlight Previously Chosen Choices
+                    </label>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3><i class="fas fa-redo"></i> Reset Progress</h3>
+                <div class="setting-item reset-button-container">
+                    <button class="back-button" data-action="reset-game-prompt"><i class="fas fa-exclamation-triangle"></i> Reset Game</button>
+                </div>
+            </div>
+        </div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-from-subscreen"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div class="sub-screen" id="controls-screen">
+        <h2 class="sub-screen-title">Controls</h2>
+        <div class="sub-screen-content">
+            <p><strong>Click / Spacebar:</strong> Advance dialogue, confirm choices.</p>
+            <p><strong>F5:</strong> Quick Save to Slot 10.</p>
+            <p><strong>F9:</strong> Quick Load from Slot 10.</p>
+            <p><strong>Arrow Up / Scroll Up:</strong> View previous dialogue in log.</p>
+            <p><strong>Arrow Down / Scroll Down:</strong> View next dialogue in log.</p>
+            <p><strong>Ctrl / Cmd:</strong> Hold to fast-forward dialogue.</p>
+            <p><strong>Esc:</strong> Open in-game menu.</p>
+        </div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-from-subscreen"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div class="sub-screen" id="about-screen">
+        <h2 class="sub-screen-title">About Everfall</h2>
+        <div class="sub-screen-content">
+            <p>Game created using HTML, CSS, and JavaScript.</p>
+        </div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-from-subscreen"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div class="save-load-screen" id="save-load-screen">
+        <h2 class="sub-screen-title">Save / Load Game</h2>
+        <div class="save-load-tabs">
+            <button class="back-button active" data-tab="save-tab">Save</button>
+            <button class="back-button" data-tab="load-tab">Load</button>
+            <button class="back-button" data-tab="choices-tab">Replay Choices</button>
+        </div>
+        <div class="save-load-content" id="save-load-grid"></div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-from-save-load"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div class="journal-container" id="journal-container">
+        <div class="journal-book-container" id="actual-animated-journal"></div>
+        <div class="journal-navigation">
+            <button class="back-button" data-action="close-journal">Close Journal</button>
+        </div>
+    </div>
+
+    <div id="dialogue-log-screen" class="sub-screen dialogue-log-screen">
+        <h2 class="sub-screen-title">Dialogue Log</h2>
+        <div class="sub-screen-content dialogue-log-content" id="dialogue-log-content"></div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-from-dialogue-log"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div id="inventory-screen" class="sub-screen inventory-screen">
+        <h2 class="sub-screen-title">Inventory</h2>
+        <div class="sub-screen-content inventory-content">
+            </div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-from-inventory"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+    
+    <div class="sub-screen" id="extras-screen">
+        <h2 class="sub-screen-title">Extras</h2>
+        <div class="sub-screen-content extras-menu">
+            <button class="menu-button" data-action="cg-gallery">CG Gallery</button>
+            <button class="menu-button" data-action="music-room">Music Room</button>
+        </div>
+        <div class="sub-screen-footer">
+           <button class="back-button" data-action="back-from-subscreen"><i class="fas fa-arrow-left"></i> Back</button>
+       </div>
+    </div>
+
+    <div class="sub-screen" id="achievements-screen">
+        <h2 class="sub-screen-title">Achievements</h2>
+        <div class="sub-screen-content achievements-content">
+            <div class="achievements-grid" id="achievements-grid"></div>
+            <h3>Poem Fragments</h3>
+            <div class="poem-display" id="poem-display"></div>
+        </div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-from-achievements"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div class="sub-screen" id="cg-gallery-screen">
+        <h2 class="sub-screen-title">CG Gallery</h2>
+        <div class="sub-screen-content">
+            <div class="gallery-grid" id="cg-gallery-grid"></div>
+        </div>
+         <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-to-extras"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div class="sub-screen" id="music-room-screen">
+        <h2 class="sub-screen-title">Music Room</h2>
+        <div class="sub-screen-content music-room-content" id="music-room-list"></div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-to-extras"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div class="sub-screen" id="world-map-screen">
+        <h2 class="sub-screen-title">World Map</h2>
+        <div class="sub-screen-content">
+            <div class="world-map-container" id="world-map-container"></div>
+        </div>
+        <div class="sub-screen-footer">
+            <button class="back-button" data-action="back-from-subscreen"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div class="sub-screen" id="cooking-screen">
+        <h2 class="sub-screen-title">Cooking Minigame</h2>
+       <div class="sub-screen-content cooking-container" id="cooking-container"></div>
+        <div class="sub-screen-footer">
+           <button class="back-button" data-action="back-from-subscreen"><i class="fas fa-arrow-left"></i> Back</button>
+       </div>
+    </div>
+
+    <audio id="background-music" loop></audio>
+    <div id="notification-popup" class="notification-popup"></div>
+
+    <script type="text/javascript" src="{% static 'jquery.js' %}"></script> 
+    <script type="text/javascript" src="{% static 'turn.js' %}"></script>   
+    <script src="{% static 'story.js' %}"></script>
+    
+    <script src="{% static 'data.js' %}"></script>
+    <script src="{% static 'state.js' %}"></script>
+    <script src="{% static 'ui.js' %}"></script>
+    <script src="{% static 'features.js' %}"></script>
+    <script src="{% static 'engine.js' %}"></script>
+    <script src="{% static 'main.js' %}"></script>
+</body>
+</html>

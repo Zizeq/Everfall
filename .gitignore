@@ -1,4 +1,9 @@
-node_modules/
-eh/
-dist/
-build/
+# Python environment and cache
+venv/
+__pycache__/
+
+# Database file (SQLite)
+db.sqlite3
+
+# Project-specific files to ignore
+.DS_Store

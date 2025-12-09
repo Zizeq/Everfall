@@ -1,0 +1,19 @@
+[
+    ["scene", "darkness"],
+    ["n", "Prologue"],
+    ["voice", "Kaelia O'Ashen...", "...Na-Morn Solvae...", "...Tel...", "Ug-h..."],
+    ["scene", "graduation"],
+    ["dean", "Congratulations, graduates!"],
+    ["c", "Well... I guess I really need to get more sleep..."],
+    ["w", "happy", "We're finally here, huh?"],
+    ["c", "How are you feeling?"],
+    ["w", "awkward", "As ready as I'll ever be..."],
+    {
+        "type": "choice",
+        "id": "outfit_choice",
+        "options": [
+            { "text": "Wear Sweater", "next": "scene_sweater" },
+            { "text": "Wear Suit", "next": "scene_suit" }
+        ]
+    }
+]

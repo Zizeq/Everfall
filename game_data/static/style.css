@@ -1,0 +1,710 @@
+* {
+    box-sizing: border-box;
+}
+:root {
+    --color-water-chestnut: #E6DBCD; /* Light beige */
+    --color-rock-cliffs: #C3B4A3;    /* Muted brown/beige */
+    --color-organic: #74786A;       /* Dark muted green/grey */
+    --color-fern-glow: #ADC77E;     /* Light vibrant green */
+    --color-antique-moss: #89A26A;  /* Medium muted green */
+    --color-mountain-forest: #5A6F4E; /* Dark green */
+    --color-text-dark: #3e2723;     /* Earthy brown for text */
+    --color-text-light: #ffffff;    /* White for contrast */
+    --char-clover: #7a52a3;
+    --char-willow: #ffcc66;
+    --char-nova: #87ceeb;
+    --char-amaryllis: #d9b04f;
+    --char-kelly: #4a90e2;
+    --char-ray: #e74c3c;
+    --char-clay: #7f8c8d;
+    --char-fenrir: #2c3e50;
+    --char-cerberus: #9b59b6;
+    --char-dean: #333333;
+    --char-guard: #606060;
+    --char-willow-mom: #9966cc;
+
+    --dialogue-bg-opacity: 0.8; /* Controlled by JS */
+}
+
+/* --- General Body and Font Styles --- */
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    color: var(--color-text-light);
+    background-color: #1a1a1a;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+.font-dyslexic {
+    font-family: 'Open Sans', sans-serif; /* Using Open Sans as a readable alternative */
+}
+.font-size-small .dialogue-text { font-size: 0.9em; }
+.font-size-normal .dialogue-text { font-size: 1.05em; }
+.font-size-large .dialogue-text { font-size: 1.2em; }
+
+
+/* --- Screen Containers --- */
+.main-menu-container,
+.game-container,
+.sub-screen,
+.save-load-screen,
+.journal-container {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    box-sizing: border-box;
+    z-index: 1; /* Default z-index */
+}
+
+/* Logic: When visible, ensure it's interactive */
+.main-menu-container.visible,
+.game-container.visible,
+.sub-screen.visible,
+.save-load-screen.visible,
+.journal-container.visible {
+    opacity: 1; visibility: visible;
+    z-index: 10; /* Bring to front when visible */
+}
+
+/* The game-container children are hidden by default in CSS, shown by JS when game-container.visible */
+.game-container .dialogue-box,
+.game-container .character-display,
+.game-container .top-controls,
+.game-container .choices-container {
+    display: none;
+}
+
+
+/* --- Main Menu --- */
+.main-menu-container {
+    background: linear-gradient(to bottom right, #3a3a3a, #1a1a1a);
+    padding: 20px; gap: 10px;
+}
+.menu-title {
+    font-size: 3.5em; color: var(--color-fern-glow);
+    text-shadow: 0 0 15px rgba(173, 199, 126, 0.6);
+    margin: 0 0 20px 0;
+}
+.menu-button {
+    background-color: var(--color-organic); color: var(--color-text-light);
+    border: 2px solid var(--color-fern-glow); border-radius: 10px;
+    padding: 15px 30px; font-size: 1.2em; cursor: pointer;
+    width: 250px; text-align: center;
+    transition: all 0.2s ease;
+}
+.menu-button:hover {
+    background-color: var(--color-antique-moss);
+    transform: translateY(-3px);
+}
+
+/* --- Game Screen --- */
+.background {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover; background-position: center;
+    transition: opacity 1s ease-in-out; z-index: 1; filter: blur(3px)
+}
+.character-display {
+    position: absolute; bottom: 0px; left: 0; width: 100%;
+    height: auto; display: flex; justify-content: center;
+    align-items: flex-end; z-index: 5; pointer-events: none;
+}
+/* This is your default size for all characters */
+.character-sprite {
+    max-height: 80vh; /* Your default height */
+    max-width: 40vw;
+    width: auto;
+    position: absolute;
+    bottom: 0;
+    transition: all 0.5s ease-out;
+}
+
+/* --- Individual Character Size Overrides --- */
+.sprite-fenrir {
+    max-height: 85vh;
+}
+
+.sprite-nova {
+    max-height: 55vh;
+}
+
+.sprite-cerberus {
+    max-height: 90vh;
+}
+.dialogue-box {
+    position: absolute; bottom: 0; left: 0; width: 100%;
+    min-height: 150px;
+    background-color: rgba(20, 20, 20, var(--dialogue-bg-opacity));
+    border-top: 2px solid var(--color-fern-glow);
+    padding: 20px; box-sizing: border-box; display: flex;
+    flex-direction: column; z-index: 10;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.name-box-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.name-box {
+    background-color: rgba(0, 0, 0, 0.6); padding: 8px 15px;
+    border-radius: 8px; font-weight: bold; font-size: 1.1em;
+}
+.dialogue-text {
+    flex-grow: 1; line-height: 1.6; width: 100%;
+}
+.general-dialogue { border-color: var(--color-fern-glow); } .general-dialogue .name-box { background-color: var(--color-organic); }
+.clover { border-color: var(--char-clover); } .clover .name-box { background-color: var(--char-clover); }
+.willow { border-color: var(--char-willow); } .willow .name-box { background-color: var(--char-willow); }
+.nova { border-color: var(--char-nova); } .nova .name-box { background-color: var(--char-nova); }
+
+/* --- History Buttons --- */
+.history-buttons {
+    position: absolute;
+    bottom: 5px; /* Adjust relative to dialogue box bottom */
+    right: 5px; /* Adjust relative to dialogue box right */
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.history-button {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--color-text-light);
+    border: 1px solid var(--color-rock-cliffs);
+    border-radius: 5px;
+    padding: 5px 8px;
+    cursor: pointer;
+    line-height: 1;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.history-button:hover:not(:disabled) {
+    background-color: var(--color-organic);
+}
+
+.history-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #555;
+}
+
+
+/* --- Top Controls --- */
+.top-controls {
+    position: absolute; top: 15px; right: 15px; display: flex;
+    gap: 10px; z-index: 100; background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 10px; padding: 10px;
+}
+.control-button {
+    background: transparent; color: var(--color-text-light);
+    border: 1px solid var(--color-fern-glow); border-radius: 8px;
+    padding: 10px 15px; cursor: pointer; display: flex;
+    align-items: center; gap: 8px; transition: all 0.2s ease;
+}
+.control-button:hover {
+    background-color: var(--color-antique-moss);
+    transform: translateY(-2px);
+}
+#music-toggle-button .fa-pause { display: none; }
+#music-toggle-button:not(.paused) .fa-play { display: none; }
+#music-toggle-button:not(.paused) .fa-pause { display: inline-block; }
+
+/* --- Choices & Sub-screens --- */
+.choices-container {
+    position: absolute; bottom: 20%; left: 50%;
+    transform: translateX(-50%); display: flex; flex-direction: column;
+    gap: 15px; z-index: 20; width: 80%; max-width: 600px;
+}
+.choice-button {
+    background-color: var(--color-organic); color: var(--color-text-light);
+    border: 2px solid var(--color-fern-glow); border-radius: 10px;
+    padding: 15px 20px; font-size: 1.1em; cursor: pointer;
+    width: 100%; transition: all 0.2s ease;
+}
+.choice-button:hover {
+    background-color: var(--color-antique-moss);
+    transform: translateY(-3px);
+}
+.choice-button.previously-chosen {
+    border-color: var(--char-clover);
+    box-shadow: inset 0 0 10px rgba(122, 82, 163, 0.5);
+}
+
+.sub-screen, .save-load-screen {
+    background-color: rgba(40, 40, 40, 0.95);
+    border: 2px solid var(--color-fern-glow);
+    max-width: 95%; max-height: 95%; overflow-y: auto;
+    padding: 30px; gap: 20px; justify-content: flex-start;
+    z-index: 50; border-radius: 15px;
+}
+
+.modal-backdrop {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); z-index: 49;
+    opacity: 0; visibility: hidden; transition: all 0.3s ease;
+    pointer-events: none;
+}
+.modal-backdrop.visible { opacity: 1; visibility: visible; }
+
+.sub-screen-title {
+    font-size: 2.2em; color: var(--color-fern-glow);
+    margin-bottom: 20px; text-align: center; width: 100%;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 15px;
+}
+.sub-screen-content {
+    flex-grow: 1; width: 100%; color: var(--color-water-chestnut);
+    font-size: 1em; line-height: 1.6; overflow-y: auto;
+}
+.sub-screen-footer {
+    width: 100%; display: flex; justify-content: center;
+    padding-top: 20px; border-top: 2px solid rgba(255, 255, 255, 0.1);
+}
+.back-button {
+    background-color: var(--color-mountain-forest); color: var(--color-text-light);
+    border: 1px solid var(--color-rock-cliffs); border-radius: 8px;
+    padding: 12px 25px; font-size: 1em; cursor: pointer; transition: all 0.3s ease;
+}
+.back-button:hover { background-color: var(--color-organic); }
+
+/* --- Settings Screen Specifics --- */
+.settings-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px; width: 100%; max-width: 1000px; margin: 0 auto;
+}
+.settings-section {
+    background-color: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px; padding: 20px;
+}
+.settings-section h3 {
+    color: var(--color-fern-glow); font-size: 1.4em; margin: 0 0 15px 0;
+    padding-bottom: 10px; border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+.setting-item { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
+.custom-radio, .custom-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.block-slider { display: flex; gap: 4px; cursor: pointer; background-color: rgba(0,0,0,0.3); padding: 3px; border-radius: 5px; }
+.block-slider .block { flex: 1; height: 20px; background-color: rgba(173, 199, 126, 0.3); border-radius: 3px; }
+.block-slider .block.active { background-color: var(--color-fern-glow); }
+.slider-label { font-size: 0.8em; text-align: center; color: var(--color-rock-cliffs); }
+
+.custom-toggle { align-items: center; gap: 10px; }
+.custom-toggle input[type="checkbox"] { display: none; }
+.custom-toggle .slider {
+    position: relative; width: 44px; height: 24px;
+    background-color: #555; border-radius: 12px; transition: background-color 0.2s;
+}
+.custom-toggle .slider::before {
+    content: ''; position: absolute; left: 4px; top: 4px;
+    width: 16px; height: 16px; background-color: white;
+    border-radius: 50%; transition: transform 0.2s;
+}
+.custom-toggle input:checked + .slider { background-color: var(--color-fern-glow); }
+.custom-toggle input:checked + .slider::before { transform: translateX(20px); }
+
+/* --- Save/Load & Dialogue Log --- */
+.save-load-content {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px; width: 100%;
+}
+/* Style for Save/Load tab buttons */
+.save-load-tabs .back-button {
+    background-color: var(--color-mountain-forest);
+}
+.save-load-tabs .back-button.active {
+    background-color: var(--color-fern-glow);
+    color: var(--color-text-dark);
+}
+.save-slot-item {
+    background-color: #2a2a2a; border: 1px solid var(--color-rock-cliffs);
+    border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;
+}
+.save-thumbnail-container { width: 100%; padding-bottom: 56.25%; position: relative; border-radius: 8px; overflow: hidden; background-color: #333; }
+.save-thumbnail { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; }
+.thumbnail-sprite { position: absolute; max-height: 90%; object-fit: contain; bottom: 0; image-rendering: pixelated; }
+
+/* Replay Choices Tab */
+.choice-item {
+    background-color: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid var(--color-rock-cliffs);
+}
+.choice-item .node-header { display: flex; align-items: center; gap: 10px; }
+.choice-item .node-title { font-weight: bold; }
+.choice-item .replay-button {
+    background-color: var(--color-antique-moss); color: var(--color-text-light);
+    border: 1px solid var(--color-fern-glow); border-radius: 5px;
+    padding: 8px 15px; cursor: pointer; transition: all 0.2s ease;
+}
+.choice-item .replay-button:hover {
+    background-color: var(--color-organic);
+}
+
+
+.dialogue-log-content { background-color: rgba(0,0,0,0.1); border-radius: 10px; padding: 15px; }
+.log-entry { display: flex; gap: 5px; padding: 5px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.1); }
+.log-speaker { font-weight: bold; flex-shrink: 0; }
+.log-speaker.willow { color: var(--char-willow); } .log-speaker.nova { color: var(--char-nova); }
+.log-narration { font-style: italic; color: var(--color-rock-cliffs); }
+
+/* --- Achievements, Inventory, CG Gallery, Music Room --- */
+.achievements-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.achievement-item { background-color: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; display: flex; align-items: center; gap: 15px; }
+.achievement-item.locked { filter: grayscale(80%); opacity: 0.7; }
+.achievement-icon { font-size: 2.5em; color: var(--color-fern-glow); }
+.poem-display { background-color: rgba(0,0,0,0.2); border-radius: 10px; padding: 20px; margin-top: 20px; }
+.poem-fragment.locked-fragment { color: var(--color-rock-cliffs); }
+
+.extras-menu {
+    display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%;
+}
+.gallery-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px; width: 100%;
+}
+.gallery-item {
+    border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;
+    border: 2px solid var(--color-rock-cliffs);
+}
+.gallery-item.locked { filter: grayscale(1) brightness(0.5); cursor: not-allowed; }
+.gallery-item img { width: 100%; display: block; }
+.gallery-item-title {
+    position: absolute; bottom: 0; left: 0; width: 100%;
+    background: rgba(0,0,0,0.7); color: white; padding: 8px;
+    text-align: center; font-size: 0.9em;
+}
+.music-room-content { display: flex; flex-direction: column; gap: 10px; }
+.music-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;
+}
+.music-item.locked { color: #888; }
+.play-music-btn { background: var(--color-fern-glow); color: var(--color-text-dark); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
+
+/* --- Journal (Flipbook) Styles --- */
+.journal-container {
+    background-color: transparent;
+    border: none;
+    perspective: 2500px;
+    padding: 20px;
+    overflow: hidden;
+    z-index: 100;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0s 0.3s;
+}
+.journal-container.visible {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 0.3s ease;
+}
+.journal-book-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    max-width: 1100px;
+    max-height: 800px;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
+}
+
+/* FLIPBOOK FIX: Override .page to avoid layout conflicts with turn.js */
+#actual-animated-journal .page {
+    background-color: #F8F4E3;
+    padding: 0 !important; 
+    display: block !important; 
+    overflow: hidden; 
+}
+
+/* New inner wrapper for page content */
+.journal-page-inner {
+    width: 100%;
+    height: 100%;
+    padding: 25px; 
+    display: flex; 
+    flex-direction: column;
+    box-sizing: border-box; 
+}
+
+#actual-animated-journal .hard {
+    background-image: url('https://placehold.co/800x600/6A4D34/F5DEB3?text=Old+Book+Cover');
+    background-color: #6A4D34;
+    background-size: cover;
+    background-position: center;
+    color: var(--color-water-chestnut);
+    box-shadow: inset 0 0 0 5px #5C3D2B;
+}
+#actual-animated-journal .hard .journal-page-inner {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    font-size: 1.2em; 
+}
+.journal-page h3 {
+    color: var(--color-mountain-forest);
+    border-bottom: 1px solid var(--color-rock-cliffs);
+    padding-bottom: 5px;
+    margin: 0 0 15px 0;
+}
+.journal-page .character-profile {
+    background: rgba(0,0,0,0.05);
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+.journal-page .character-profile h4 { margin: 0 0 5px 0; }
+.journal-page .character-profile p { margin: 0; font-size: 0.9em; }
+.journal-textarea {
+    width: 100%; flex-grow: 1; background: transparent; border: none;
+    resize: none; color: var(--color-text-dark); font-family: 'Times New Roman', serif;
+    font-size: 1.1em; outline: none;
+}
+.toc-page ul { list-style: none; padding: 0; }
+.toc-page li { padding: 8px; cursor: pointer; border-bottom: 1px dotted #ccc; font-size: 1.2em; }
+.toc-page li:hover { color: var(--color-fern-glow); }
+.toc-page li.locked { color: #999; cursor: not-allowed; }
+.journal-navigation {
+    width: 100%; display: flex; justify-content: center;
+    margin-top: 20px; gap: 15px; position: relative; z-index: 100;
+}
+#journal-container { pointer-events: none; }
+#journal-container > * { pointer-events: auto; }
+
+/* --- NEW FEATURE STYLES (Inventory, Map, Cooking) --- */
+/* --- Inventory Tweaks --- */
+.inventory-section {
+    width: 100%;
+    margin-bottom: 25px;
+}
+.inventory-section h3 {
+    color: var(--color-fern-glow);
+    border-bottom: 1px solid var(--color-fern-glow);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+}
+.inventory-item {
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+}
+.item-thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--color-fern-glow);
+}
+.item-type-tag {
+    font-size: 0.8em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background-color: var(--color-mountain-forest);
+    color: white;
+    margin-top: 10px;
+    display: inline-block;
+}
+
+/* --- World Map Styles --- */
+.world-map-container {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: auto;
+    aspect-ratio: 16 / 9;
+    background-image: url('https://placehold.co/1280x720/333/666?text=World+Map+Background');
+    background-size: cover;
+    background-position: center;
+    border-radius: 10px;
+}
+.map-point {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-color: var(--color-fern-glow);
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2em;
+}
+.map-point:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 15px var(--color-fern-glow);
+}
+.map-point.locked {
+    background-color: #555;
+    border-color: #888;
+    cursor: not-allowed;
+    color: #999;
+}
+.map-point.locked:hover {
+    transform: none;
+    box-shadow: none;
+}
+.map-point .map-point-tooltip {
+    visibility: hidden;
+    width: 160px;
+    background-color: rgba(0,0,0,0.8);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 150%;
+    left: 50%;
+    margin-left: -80px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.map-point:hover .map-point-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* --- Cooking Screen Styles --- */
+.cooking-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+}
+.cooking-section {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+.cooking-section h3 {
+    color: var(--color-fern-glow);
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(255,255,255,0.2);
+}
+.scrollable-list {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+.recipe-item, .ingredient-item {
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    background-color: rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.recipe-item:hover:not(.locked) {
+    background-color: rgba(173, 199, 126, 0.3);
+}
+.recipe-item.selected {
+    background-color: var(--color-antique-moss);
+    border: 1px solid var(--color-fern-glow);
+}
+.recipe-item.locked {
+    color: #888;
+    cursor: not-allowed;
+}
+.cook-button {
+    background-color: var(--color-organic);
+    color: var(--color-text-light);
+    border: 2px solid var(--color-fern-glow);
+    border-radius: 10px;
+    padding: 15px 20px;
+    font-size: 1.1em;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s ease;
+    margin-top: 15px;
+}
+.cook-button:hover:not(:disabled) {
+    background-color: var(--color-antique-moss);
+}
+.cook-button:disabled {
+    background-color: #555;
+    border-color: #777;
+    cursor: not-allowed;
+}
+.recipe-details-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.recipe-details-content li {
+    margin-bottom: 5px;
+}
+.recipe-details-content .has-ingredient {
+    color: var(--color-fern-glow);
+}
+.recipe-details-content .missing-ingredient {
+    color: #e74c3c;
+    text-decoration: line-through;
+}
+
+
+/* --- Utility & Popups --- */
+.message-box-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+.message-box { background: var(--color-organic); border: 2px solid var(--color-fern-glow); border-radius: 15px; padding: 25px; text-align: center; max-width: 90%; width: 450px; }
+.message-box .button-group { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+.message-box .button-group button {
+    background-color: var(--color-mountain-forest); color: var(--color-text-light);
+    border: 1px solid var(--color-rock-cliffs); border-radius: 8px;
+    padding: 10px 20px; cursor: pointer; transition: background-color 0.3s ease;
+}
+.message-box .button-group button:hover {
+    background-color: var(--color-organic);
+}
+.message-box .button-group button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.notification-popup { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: var(--color-fern-glow); padding: 12px 25px; border-radius: 10px; z-index: 999; opacity: 0; transition: all 0.5s ease; pointer-events: none; }
+.notification-popup.show { opacity: 1; bottom: 40px; }
+
+/* Affection Indicator Animation */
+@keyframes affection-pulse {
+    0% { transform: scale(1) translateY(0); opacity: 1; }
+    100% { transform: scale(1.5) translateY(-20px); opacity: 0; }
+}
+.affection-indicator {
+    position: absolute; 
+    right: -25px; 
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ff6b81;
+    font-size: 1.2em;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 11;
+}
+.affection-indicator.show-heart {
+    animation: affection-pulse 1s ease-out forwards;
+}
+
+.continue-prompt {
+    margin-top: 10px;
+    font-style: italic;
+    color: var(--color-rock-cliffs);
+    text-align: right;
+    width: 100%;
+}

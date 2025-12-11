@@ -1,18 +1,30 @@
-* {
-    box-sizing: border-box;
-}
+/* ==========================================================================
+   EVERFALL: THE SHATTERED ARCHIVE THEME
+   ========================================================================== */
+
+/* --- Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* --- Variables & Palette --- */
 :root {
-    --color-water-chestnut: #E6DBCD; /* Light beige */
-    --color-rock-cliffs: #C3B4A3;    /* Muted brown/beige */
-    --color-organic: #74786A;       /* Dark muted green/grey */
-    --color-fern-glow: #ADC77E;     /* Light vibrant green */
-    --color-antique-moss: #89A26A;  /* Medium muted green */
-    --color-mountain-forest: #5A6F4E; /* Dark green */
-    --color-text-dark: #3e2723;     /* Earthy brown for text */
-    --color-text-light: #ffffff;    /* White for contrast */
-    --char-clover: #7a52a3;
-    --char-willow: #ffcc66;
-    --char-nova: #87ceeb;
+    /* Core Colors */
+    --bg-deep: #0f111a;           /* Deep space/night background */
+    --bg-glass: rgba(15, 17, 26, 0.85); /* Main UI glass background */
+    --bg-glass-light: rgba(30, 35, 50, 0.5); /* Lighter glass for items */
+    
+    --accent-gold: #c5a059;       /* Kintsugi Gold - Main Accent */
+    --accent-glow: #e6c88b;       /* Highlight/Hover Gold */
+    --accent-fern: #5c7c59;       /* Muted Nature Green */
+    --accent-danger: #8b3a3a;     /* Red/Delete actions */
+
+    --text-main: #e0e0e0;         /* Soft White text */
+    --text-dim: #a0a0a0;          /* Dimmed/Secondary text */
+    --text-dark: #1a1a1a;         /* Dark text for light backgrounds */
+
+    /* Character Colors (Legacy & New) */
+    --char-clover: #9b72cf;
+    --char-willow: #ffd27f;
+    --char-nova: #89cff0;
     --char-amaryllis: #d9b04f;
     --char-kelly: #4a90e2;
     --char-ray: #e74c3c;
@@ -23,688 +35,637 @@
     --char-guard: #606060;
     --char-willow-mom: #9966cc;
 
-    --dialogue-bg-opacity: 0.8; /* Controlled by JS */
+    /* UI Settings */
+    --border-radius-lg: 12px;
+    --border-radius-sm: 6px;
+    --glass-blur: 12px;
+    --dialogue-bg-opacity: 0.85; /* Can be tweaked by JS settings */
 }
 
-/* --- General Body and Font Styles --- */
+/* ==========================================================================
+   GLOBAL STYLES
+   ========================================================================== */
+
+* { box-sizing: border-box; }
+
 body {
     margin: 0;
-    font-family: 'Inter', sans-serif;
-    color: var(--color-text-light);
-    background-color: #1a1a1a;
+    font-family: 'Lato', sans-serif; /* Modern, clean reading font */
+    color: var(--text-main);
+    background-color: var(--bg-deep);
     overflow: hidden;
     width: 100vw;
     height: 100vh;
 }
-.font-dyslexic {
-    font-family: 'Open Sans', sans-serif; /* Using Open Sans as a readable alternative */
+
+/* Typography Overrides */
+h1, h2, h3, .menu-title, .name-box, .sub-screen-title, .gallery-item-title {
+    font-family: 'Cinzel', serif; /* The "Mythic" header font */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
+
+.font-dyslexic { font-family: 'Open Sans', sans-serif; }
 .font-size-small .dialogue-text { font-size: 0.9em; }
-.font-size-normal .dialogue-text { font-size: 1.05em; }
-.font-size-large .dialogue-text { font-size: 1.2em; }
+.font-size-normal .dialogue-text { font-size: 1.15em; }
+.font-size-large .dialogue-text { font-size: 1.3em; }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+::-webkit-scrollbar-thumb { 
+    background: var(--bg-glass-light); 
+    border-radius: 4px; 
+    border: 1px solid var(--accent-gold);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-gold); }
 
-/* --- Screen Containers --- */
+/* Animations */
+@keyframes slideUpFade {
+    from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes glowPulse {
+    from { text-shadow: 0 0 10px var(--accent-gold); }
+    to { text-shadow: 0 0 30px var(--accent-gold), 0 0 10px white; }
+}
+
+/* ==========================================================================
+   SCREEN CONTAINERS & VISIBILITY
+   ========================================================================== */
+
 .main-menu-container,
 .game-container,
 .sub-screen,
 .save-load-screen,
 .journal-container {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    display: flex; flex-direction: column; 
     opacity: 0; visibility: hidden;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-    box-sizing: border-box;
-    z-index: 1; /* Default z-index */
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+    z-index: 1;
 }
 
-/* Logic: When visible, ensure it's interactive */
+/* Interactive States */
 .main-menu-container.visible,
-.game-container.visible,
+.game-container.visible {
+    opacity: 1; visibility: visible;
+    z-index: 10;
+}
+
+/* Popups need higher Z-Index to sit above the backdrop */
 .sub-screen.visible,
-.save-load-screen.visible,
+.save-load-screen.visible {
+    opacity: 1; visibility: visible;
+    z-index: 50;
+    animation: slideUpFade 0.3s ease-out forwards;
+}
+
 .journal-container.visible {
     opacity: 1; visibility: visible;
-    z-index: 10; /* Bring to front when visible */
+    z-index: 100;
 }
 
-/* The game-container children are hidden by default in CSS, shown by JS when game-container.visible */
-.game-container .dialogue-box,
-.game-container .character-display,
-.game-container .top-controls,
-.game-container .choices-container {
-    display: none;
+/* The Dark Backdrop */
+.modal-backdrop {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    /* Use a very transparent dark layer + heavy blur */
+    background-color: rgba(0, 0, 0, 0.2); 
+    backdrop-filter: blur(8px); /* The "Frosted Glass" effect */
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 49;
+    opacity: 0; visibility: hidden; transition: all 0.3s ease;
+    pointer-events: auto;
 }
+.modal-backdrop.visible { opacity: 1; visibility: visible; }
 
+.notification-popup { z-index: 200; }
 
-/* --- Main Menu --- */
+/* ==========================================================================
+   MAIN MENU
+   ========================================================================== */
+
 .main-menu-container {
-    background: linear-gradient(to bottom right, #3a3a3a, #1a1a1a);
-    padding: 20px; gap: 10px;
+    background: url('/static/images/backgrounds/forest.jpg') no-repeat center center/cover;
+    justify-content: center; padding-left: 10%;
+    box-shadow: inset 800px 0 500px -300px rgba(0,0,0,0.9);
 }
-.menu-title {
-    font-size: 3.5em; color: var(--color-fern-glow);
-    text-shadow: 0 0 15px rgba(173, 199, 126, 0.6);
-    margin: 0 0 20px 0;
-}
+.menu-title { font-size: 5.5em; text-shadow: 0 0 20px var(--accent-gold); margin-bottom: 40px; }
 .menu-button {
-    background-color: var(--color-organic); color: var(--color-text-light);
-    border: 2px solid var(--color-fern-glow); border-radius: 10px;
-    padding: 15px 30px; font-size: 1.2em; cursor: pointer;
-    width: 250px; text-align: center;
-    transition: all 0.2s ease;
+    background: transparent; color: var(--text-dim); border: none; border-left: 3px solid transparent;
+    padding: 12px 25px; font-family: 'Cinzel', serif; font-size: 1.5em; text-align: left; cursor: pointer; transition: all 0.3s ease;
 }
-.menu-button:hover {
-    background-color: var(--color-antique-moss);
-    transform: translateY(-3px);
-}
+.menu-button:hover { color: var(--accent-gold); padding-left: 35px; border-left-color: var(--accent-gold); }
 
-/* --- Game Screen --- */
+/* ==========================================================================
+   GAMEPLAY SCREEN
+   ========================================================================== */
+
 .background {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background-size: cover; background-position: center;
-    transition: opacity 1s ease-in-out; z-index: 1; filter: blur(3px)
+    transition: opacity 1s ease-in-out; z-index: 1; 
+    /* Optional: Slight blur for depth */
+    /* filter: blur(2px); */ 
 }
+
 .character-display {
-    position: absolute; bottom: 0px; left: 0; width: 100%;
-    height: auto; display: flex; justify-content: center;
+    position: absolute; bottom: 0; left: 0; width: 100%;
+    height: 100%; display: flex; justify-content: center;
     align-items: flex-end; z-index: 5; pointer-events: none;
 }
-/* This is your default size for all characters */
+
 .character-sprite {
-    max-height: 80vh; /* Your default height */
-    max-width: 40vw;
-    width: auto;
-    position: absolute;
-    bottom: 0;
+    max-height: 85vh; width: auto;
+    position: absolute; bottom: 0;
     transition: all 0.5s ease-out;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
 }
+/* Sprite Overrides */
+.sprite-fenrir { max-height: 90vh; }
+.sprite-nova { max-height: 60vh; }
+.sprite-cerberus { max-height: 95vh; }
 
-/* --- Individual Character Size Overrides --- */
-.sprite-fenrir {
-    max-height: 85vh;
-}
-
-.sprite-nova {
-    max-height: 55vh;
-}
-
-.sprite-cerberus {
-    max-height: 90vh;
-}
+/* --- Dialogue Box (The Glass Pane) --- */
 .dialogue-box {
-    position: absolute; bottom: 0; left: 0; width: 100%;
-    min-height: 150px;
-    background-color: rgba(20, 20, 20, var(--dialogue-bg-opacity));
-    border-top: 2px solid var(--color-fern-glow);
-    padding: 20px; box-sizing: border-box; display: flex;
-    flex-direction: column; z-index: 10;
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+    width: 90%; max-width: 1200px; min-height: 200px;
+    
+    /* Glassmorphism */
+    background: rgba(15, 17, 26, var(--dialogue-bg-opacity));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    
+    /* Gold Borders */
+    border: 1px solid rgba(197, 160, 89, 0.2); 
+    border-top: 3px solid var(--accent-gold);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    border-radius: var(--border-radius-lg);
+    
+    padding: 35px 50px;
+    display: flex; flex-direction: column;
+    z-index: 10;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
+
 .name-box-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    position: absolute; top: -22px; left: 40px;
+    display: flex; align-items: center; gap: 15px;
 }
+
 .name-box {
-    background-color: rgba(0, 0, 0, 0.6); padding: 8px 15px;
-    border-radius: 8px; font-weight: bold; font-size: 1.1em;
+    background: linear-gradient(135deg, var(--accent-gold), #8a6e38);
+    color: #1a1a1a;
+    padding: 8px 30px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 1.2em;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%);
 }
+
 .dialogue-text {
-    flex-grow: 1; line-height: 1.6; width: 100%;
+    flex-grow: 1; width: 100%;
+    color: var(--text-main);
+    line-height: 1.7;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
-.general-dialogue { border-color: var(--color-fern-glow); } .general-dialogue .name-box { background-color: var(--color-organic); }
-.clover { border-color: var(--char-clover); } .clover .name-box { background-color: var(--char-clover); }
-.willow { border-color: var(--char-willow); } .willow .name-box { background-color: var(--char-willow); }
-.nova { border-color: var(--char-nova); } .nova .name-box { background-color: var(--char-nova); }
 
-/* --- History Buttons --- */
+/* Character Specific Dialogue Colors */
+.clover { border-top-color: var(--char-clover); } .clover .name-box { background: var(--char-clover); }
+.willow { border-top-color: var(--char-willow); } .willow .name-box { background: var(--char-willow); }
+.nova { border-top-color: var(--char-nova); } .nova .name-box { background: var(--char-nova); }
+/* Add others as needed */
+
+/* Continue Prompt */
+.continue-prompt {
+    align-self: flex-end;
+    font-family: 'Cinzel', serif;
+    font-size: 0.9em;
+    color: var(--accent-gold);
+    animation: glowPulse 2s infinite;
+    margin-top: 10px;
+}
+
+/* History Buttons */
 .history-buttons {
-    position: absolute;
-    bottom: 5px; /* Adjust relative to dialogue box bottom */
-    right: 5px; /* Adjust relative to dialogue box right */
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+    position: absolute; bottom: 10px; right: 10px;
+    display: flex; flex-direction: column; gap: 5px;
 }
-
 .history-button {
-    background-color: rgba(0, 0, 0, 0.5);
-    color: var(--color-text-light);
-    border: 1px solid var(--color-rock-cliffs);
-    border-radius: 5px;
-    padding: 5px 8px;
-    cursor: pointer;
-    line-height: 1;
-    transition: background-color 0.2s, border-color 0.2s;
+    background: rgba(0,0,0,0.5); border: 1px solid var(--accent-gold);
+    color: var(--accent-gold); border-radius: 4px;
+    padding: 6px; cursor: pointer; transition: all 0.2s;
 }
+.history-button:hover:not(:disabled) { background: var(--accent-gold); color: #000; }
+.history-button:disabled { opacity: 0.3; border-color: #555; color: #555; }
 
-.history-button:hover:not(:disabled) {
-    background-color: var(--color-organic);
-}
-
-.history-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    border-color: #555;
-}
-
-
-/* --- Top Controls --- */
+/* Top Controls */
 .top-controls {
-    position: absolute; top: 15px; right: 15px; display: flex;
-    gap: 10px; z-index: 100; background-color: rgba(0, 0, 0, 0.4);
-    border-radius: 10px; padding: 10px;
+    position: absolute; top: 20px; right: 20px;
+    display: flex; gap: 10px; z-index: 100;
+    background: var(--bg-glass);
+    padding: 10px 15px; border-radius: 30px;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 .control-button {
-    background: transparent; color: var(--color-text-light);
-    border: 1px solid var(--color-fern-glow); border-radius: 8px;
-    padding: 10px 15px; cursor: pointer; display: flex;
-    align-items: center; gap: 8px; transition: all 0.2s ease;
+    background: transparent; color: var(--text-dim);
+    border: none; cursor: pointer; font-size: 1.2em;
+    transition: color 0.2s;
 }
-.control-button:hover {
-    background-color: var(--color-antique-moss);
-    transform: translateY(-2px);
-}
+.control-button:hover { color: var(--accent-gold); transform: scale(1.1); }
 #music-toggle-button .fa-pause { display: none; }
 #music-toggle-button:not(.paused) .fa-play { display: none; }
 #music-toggle-button:not(.paused) .fa-pause { display: inline-block; }
 
-/* --- Choices & Sub-screens --- */
+/* Choices */
 .choices-container {
-    position: absolute; bottom: 20%; left: 50%;
-    transform: translateX(-50%); display: flex; flex-direction: column;
-    gap: 15px; z-index: 20; width: 80%; max-width: 600px;
+    position: absolute; bottom: 35%; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; gap: 15px;
+    z-index: 20; width: 60%; max-width: 600px;
 }
 .choice-button {
-    background-color: var(--color-organic); color: var(--color-text-light);
-    border: 2px solid var(--color-fern-glow); border-radius: 10px;
-    padding: 15px 20px; font-size: 1.1em; cursor: pointer;
-    width: 100%; transition: all 0.2s ease;
+    background: var(--bg-glass);
+    color: var(--text-main);
+    border: 1px solid var(--accent-gold);
+    border-radius: 4px;
+    padding: 20px; font-size: 1.2em; cursor: pointer;
+    font-family: 'Cinzel', serif;
+    transition: all 0.2s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
 .choice-button:hover {
-    background-color: var(--color-antique-moss);
-    transform: translateY(-3px);
+    background: linear-gradient(90deg, rgba(197, 160, 89, 0.2), transparent);
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(197, 160, 89, 0.3);
 }
 .choice-button.previously-chosen {
-    border-color: var(--char-clover);
-    box-shadow: inset 0 0 10px rgba(122, 82, 163, 0.5);
+    opacity: 0.7; border-color: var(--text-dim); color: var(--text-dim);
 }
+
+/* ==========================================================================
+   SUB-SCREENS (MODALS) - The "Card" Look
+   ========================================================================== */
 
 .sub-screen, .save-load-screen {
-    background-color: rgba(40, 40, 40, 0.95);
-    border: 2px solid var(--color-fern-glow);
-    max-width: 95%; max-height: 95%; overflow-y: auto;
-    padding: 30px; gap: 20px; justify-content: flex-start;
-    z-index: 50; border-radius: 15px;
+    /* Centered Fixed Card */
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%; height: 85%;
+    max-width: 1200px; max-height: 850px;
+    
+    /* Dark Glass Theme */
+    background: rgba(10, 12, 18, 0.95);
+    border: 1px solid var(--accent-gold);
+    box-shadow: 0 0 60px rgba(0,0,0,0.8);
+    border-radius: var(--border-radius-lg);
+    
+    padding: 0; /* Content padding handled inside */
+    display: flex; flex-direction: column;
+    overflow: hidden; /* Container doesn't scroll, inner content does */
 }
-
-.modal-backdrop {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); z-index: 49;
-    opacity: 0; visibility: hidden; transition: all 0.3s ease;
-    pointer-events: none;
-}
-.modal-backdrop.visible { opacity: 1; visibility: visible; }
 
 .sub-screen-title {
-    font-size: 2.2em; color: var(--color-fern-glow);
-    margin-bottom: 20px; text-align: center; width: 100%;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 15px;
-}
-.sub-screen-content {
-    flex-grow: 1; width: 100%; color: var(--color-water-chestnut);
-    font-size: 1em; line-height: 1.6; overflow-y: auto;
-}
-.sub-screen-footer {
-    width: 100%; display: flex; justify-content: center;
-    padding-top: 20px; border-top: 2px solid rgba(255, 255, 255, 0.1);
-}
-.back-button {
-    background-color: var(--color-mountain-forest); color: var(--color-text-light);
-    border: 1px solid var(--color-rock-cliffs); border-radius: 8px;
-    padding: 12px 25px; font-size: 1em; cursor: pointer; transition: all 0.3s ease;
-}
-.back-button:hover { background-color: var(--color-organic); }
-
-/* --- Settings Screen Specifics --- */
-.settings-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 25px; width: 100%; max-width: 1000px; margin: 0 auto;
-}
-.settings-section {
-    background-color: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px; padding: 20px;
-}
-.settings-section h3 {
-    color: var(--color-fern-glow); font-size: 1.4em; margin: 0 0 15px 0;
-    padding-bottom: 10px; border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-}
-.setting-item { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
-.custom-radio, .custom-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.block-slider { display: flex; gap: 4px; cursor: pointer; background-color: rgba(0,0,0,0.3); padding: 3px; border-radius: 5px; }
-.block-slider .block { flex: 1; height: 20px; background-color: rgba(173, 199, 126, 0.3); border-radius: 3px; }
-.block-slider .block.active { background-color: var(--color-fern-glow); }
-.slider-label { font-size: 0.8em; text-align: center; color: var(--color-rock-cliffs); }
-
-.custom-toggle { align-items: center; gap: 10px; }
-.custom-toggle input[type="checkbox"] { display: none; }
-.custom-toggle .slider {
-    position: relative; width: 44px; height: 24px;
-    background-color: #555; border-radius: 12px; transition: background-color 0.2s;
-}
-.custom-toggle .slider::before {
-    content: ''; position: absolute; left: 4px; top: 4px;
-    width: 16px; height: 16px; background-color: white;
-    border-radius: 50%; transition: transform 0.2s;
-}
-.custom-toggle input:checked + .slider { background-color: var(--color-fern-glow); }
-.custom-toggle input:checked + .slider::before { transform: translateX(20px); }
-
-/* --- Save/Load & Dialogue Log --- */
-.save-load-content {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px; width: 100%;
-}
-/* Style for Save/Load tab buttons */
-.save-load-tabs .back-button {
-    background-color: var(--color-mountain-forest);
-}
-.save-load-tabs .back-button.active {
-    background-color: var(--color-fern-glow);
-    color: var(--color-text-dark);
-}
-.save-slot-item {
-    background-color: #2a2a2a; border: 1px solid var(--color-rock-cliffs);
-    border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px;
-}
-.save-thumbnail-container { width: 100%; padding-bottom: 56.25%; position: relative; border-radius: 8px; overflow: hidden; background-color: #333; }
-.save-thumbnail { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; }
-.thumbnail-sprite { position: absolute; max-height: 90%; object-fit: contain; bottom: 0; image-rendering: pixelated; }
-
-/* Replay Choices Tab */
-.choice-item {
-    background-color: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px;
-    display: flex; justify-content: space-between; align-items: center;
-    border: 1px solid var(--color-rock-cliffs);
-}
-.choice-item .node-header { display: flex; align-items: center; gap: 10px; }
-.choice-item .node-title { font-weight: bold; }
-.choice-item .replay-button {
-    background-color: var(--color-antique-moss); color: var(--color-text-light);
-    border: 1px solid var(--color-fern-glow); border-radius: 5px;
-    padding: 8px 15px; cursor: pointer; transition: all 0.2s ease;
-}
-.choice-item .replay-button:hover {
-    background-color: var(--color-organic);
+    font-size: 2.2em; color: var(--accent-gold);
+    background: linear-gradient(to right, rgba(197, 160, 89, 0.08), transparent);
+    padding: 25px 40px; margin: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    text-align: left;
 }
 
-
-.dialogue-log-content { background-color: rgba(0,0,0,0.1); border-radius: 10px; padding: 15px; }
-.log-entry { display: flex; gap: 5px; padding: 5px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.1); }
-.log-speaker { font-weight: bold; flex-shrink: 0; }
-.log-speaker.willow { color: var(--char-willow); } .log-speaker.nova { color: var(--char-nova); }
-.log-narration { font-style: italic; color: var(--color-rock-cliffs); }
-
-/* --- Achievements, Inventory, CG Gallery, Music Room --- */
-.achievements-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-.achievement-item { background-color: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; display: flex; align-items: center; gap: 15px; }
-.achievement-item.locked { filter: grayscale(80%); opacity: 0.7; }
-.achievement-icon { font-size: 2.5em; color: var(--color-fern-glow); }
-.poem-display { background-color: rgba(0,0,0,0.2); border-radius: 10px; padding: 20px; margin-top: 20px; }
-.poem-fragment.locked-fragment { color: var(--color-rock-cliffs); }
-
-.extras-menu {
-    display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%;
-}
-.gallery-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px; width: 100%;
-}
-.gallery-item {
-    border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;
-    border: 2px solid var(--color-rock-cliffs);
-}
-.gallery-item.locked { filter: grayscale(1) brightness(0.5); cursor: not-allowed; }
-.gallery-item img { width: 100%; display: block; }
-.gallery-item-title {
-    position: absolute; bottom: 0; left: 0; width: 100%;
-    background: rgba(0,0,0,0.7); color: white; padding: 8px;
-    text-align: center; font-size: 0.9em;
-}
-.music-room-content { display: flex; flex-direction: column; gap: 10px; }
-.music-item {
-    display: flex; justify-content: space-between; align-items: center;
-    background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;
-}
-.music-item.locked { color: #888; }
-.play-music-btn { background: var(--color-fern-glow); color: var(--color-text-dark); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
-
-/* --- Journal (Flipbook) Styles --- */
-.journal-container {
-    background-color: transparent;
-    border: none;
-    perspective: 2500px;
-    padding: 20px;
-    overflow: hidden;
-    z-index: 100;
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease, visibility 0s 0.3s;
-}
-.journal-container.visible {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-    transition: opacity 0.3s ease;
-}
-.journal-book-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    margin: auto;
-    width: 100%;
-    height: 100%;
-    max-width: 1100px;
-    max-height: 800px;
-    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5));
-}
-
-/* FLIPBOOK FIX: Override .page to avoid layout conflicts with turn.js */
-#actual-animated-journal .page {
-    background-color: #F8F4E3;
-    padding: 0 !important; 
-    display: block !important; 
-    overflow: hidden; 
-}
-
-/* New inner wrapper for page content */
-.journal-page-inner {
-    width: 100%;
-    height: 100%;
-    padding: 25px; 
-    display: flex; 
-    flex-direction: column;
-    box-sizing: border-box; 
-}
-
-#actual-animated-journal .hard {
-    background-image: url('https://placehold.co/800x600/6A4D34/F5DEB3?text=Old+Book+Cover');
-    background-color: #6A4D34;
-    background-size: cover;
-    background-position: center;
-    color: var(--color-water-chestnut);
-    box-shadow: inset 0 0 0 5px #5C3D2B;
-}
-#actual-animated-journal .hard .journal-page-inner {
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    font-size: 1.2em; 
-}
-.journal-page h3 {
-    color: var(--color-mountain-forest);
-    border-bottom: 1px solid var(--color-rock-cliffs);
-    padding-bottom: 5px;
-    margin: 0 0 15px 0;
-}
-.journal-page .character-profile {
-    background: rgba(0,0,0,0.05);
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-}
-.journal-page .character-profile h4 { margin: 0 0 5px 0; }
-.journal-page .character-profile p { margin: 0; font-size: 0.9em; }
-.journal-textarea {
-    width: 100%; flex-grow: 1; background: transparent; border: none;
-    resize: none; color: var(--color-text-dark); font-family: 'Times New Roman', serif;
-    font-size: 1.1em; outline: none;
-}
-.toc-page ul { list-style: none; padding: 0; }
-.toc-page li { padding: 8px; cursor: pointer; border-bottom: 1px dotted #ccc; font-size: 1.2em; }
-.toc-page li:hover { color: var(--color-fern-glow); }
-.toc-page li.locked { color: #999; cursor: not-allowed; }
-.journal-navigation {
-    width: 100%; display: flex; justify-content: center;
-    margin-top: 20px; gap: 15px; position: relative; z-index: 100;
-}
-#journal-container { pointer-events: none; }
-#journal-container > * { pointer-events: auto; }
-
-/* --- NEW FEATURE STYLES (Inventory, Map, Cooking) --- */
-/* --- Inventory Tweaks --- */
-.inventory-section {
-    width: 100%;
-    margin-bottom: 25px;
-}
-.inventory-section h3 {
-    color: var(--color-fern-glow);
-    border-bottom: 1px solid var(--color-fern-glow);
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-}
-.item-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 20px;
-}
-.inventory-item {
-    background-color: rgba(0,0,0,0.3);
-    border-radius: 10px;
-    padding: 15px;
-    text-align: center;
-}
-.item-thumbnail {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    border: 1px solid var(--color-fern-glow);
-}
-.item-type-tag {
-    font-size: 0.8em;
-    padding: 3px 8px;
-    border-radius: 10px;
-    background-color: var(--color-mountain-forest);
-    color: white;
-    margin-top: 10px;
-    display: inline-block;
-}
-
-/* --- World Map Styles --- */
-.world-map-container {
-    position: relative;
-    width: 100%;
-    max-width: 1200px;
-    margin: auto;
-    aspect-ratio: 16 / 9;
-    background-image: url('https://placehold.co/1280x720/333/666?text=World+Map+Background');
-    background-size: cover;
-    background-position: center;
-    border-radius: 10px;
-}
-.map-point {
-    position: absolute;
-    width: 30px;
-    height: 30px;
-    background-color: var(--color-fern-glow);
-    border-radius: 50%;
-    border: 2px solid white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.2em;
-}
-.map-point:hover {
-    transform: scale(1.3);
-    box-shadow: 0 0 15px var(--color-fern-glow);
-}
-.map-point.locked {
-    background-color: #555;
-    border-color: #888;
-    cursor: not-allowed;
-    color: #999;
-}
-.map-point.locked:hover {
-    transform: none;
-    box-shadow: none;
-}
-.map-point .map-point-tooltip {
-    visibility: hidden;
-    width: 160px;
-    background-color: rgba(0,0,0,0.8);
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 8px;
-    position: absolute;
-    z-index: 1;
-    bottom: 150%;
-    left: 50%;
-    margin-left: -80px;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-.map-point:hover .map-point-tooltip {
-    visibility: visible;
-    opacity: 1;
-}
-
-/* --- Cooking Screen Styles --- */
-.cooking-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 20px;
-    width: 100%;
-    height: 100%;
-}
-.cooking-section {
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 10px;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-}
-.cooking-section h3 {
-    color: var(--color-fern-glow);
-    margin: 0 0 15px 0;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed rgba(255,255,255,0.2);
-}
-.scrollable-list {
+.sub-screen-content, .save-load-content {
+    padding: 30px 40px;
     overflow-y: auto;
     flex-grow: 1;
+    min-height: 0; /* Flexbox scroll fix */
 }
-.recipe-item, .ingredient-item {
-    padding: 10px;
-    margin-bottom: 8px;
-    border-radius: 5px;
-    background-color: rgba(0,0,0,0.3);
-    cursor: pointer;
-    transition: background-color 0.2s;
+
+.sub-screen-footer {
+    padding: 20px 40px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex; justify-content: flex-end;
 }
-.recipe-item:hover:not(.locked) {
-    background-color: rgba(173, 199, 126, 0.3);
-}
-.recipe-item.selected {
-    background-color: var(--color-antique-moss);
-    border: 1px solid var(--color-fern-glow);
-}
-.recipe-item.locked {
-    color: #888;
-    cursor: not-allowed;
-}
-.cook-button {
-    background-color: var(--color-organic);
-    color: var(--color-text-light);
-    border: 2px solid var(--color-fern-glow);
-    border-radius: 10px;
-    padding: 15px 20px;
+
+.back-button {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--text-dim);
+    border-radius: 4px;
+    padding: 10px 30px;
+    font-family: 'Cinzel', serif;
     font-size: 1.1em;
-    cursor: pointer;
-    width: 100%;
-    transition: all 0.2s ease;
-    margin-top: 15px;
+    cursor: pointer; transition: all 0.3s;
 }
-.cook-button:hover:not(:disabled) {
-    background-color: var(--color-antique-moss);
-}
-.cook-button:disabled {
-    background-color: #555;
-    border-color: #777;
-    cursor: not-allowed;
-}
-.recipe-details-content ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.recipe-details-content li {
-    margin-bottom: 5px;
-}
-.recipe-details-content .has-ingredient {
-    color: var(--color-fern-glow);
-}
-.recipe-details-content .missing-ingredient {
-    color: #e74c3c;
-    text-decoration: line-through;
+.back-button:hover {
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
 }
 
+/* ==========================================================================
+   SAVE / LOAD SLOTS (Ren'Py Style)
+   ========================================================================== */
 
-/* --- Utility & Popups --- */
-.message-box-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-.message-box { background: var(--color-organic); border: 2px solid var(--color-fern-glow); border-radius: 15px; padding: 25px; text-align: center; max-width: 90%; width: 450px; }
-.message-box .button-group { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
-.message-box .button-group button {
-    background-color: var(--color-mountain-forest); color: var(--color-text-light);
-    border: 1px solid var(--color-rock-cliffs); border-radius: 8px;
-    padding: 10px 20px; cursor: pointer; transition: background-color 0.3s ease;
+.save-load-tabs {
+    display: flex; padding: 0 40px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.2);
 }
-.message-box .button-group button:hover {
-    background-color: var(--color-organic);
+.save-load-tabs .back-button {
+    border: none; border-bottom: 2px solid transparent;
+    border-radius: 0; margin: 0; padding: 20px 30px;
 }
-.message-box .button-group button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+.save-load-tabs .back-button:hover { box-shadow: none; color: var(--text-main); }
+.save-load-tabs .back-button.active {
+    border-bottom-color: var(--accent-gold);
+    color: var(--accent-gold);
 }
 
-.notification-popup { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: var(--color-fern-glow); padding: 12px 25px; border-radius: 10px; z-index: 999; opacity: 0; transition: all 0.5s ease; pointer-events: none; }
-.notification-popup.show { opacity: 1; bottom: 40px; }
+.save-load-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+    gap: 20px;
+}
 
-/* Affection Indicator Animation */
+.save-slot-item {
+    display: flex; height: 130px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 6px; overflow: hidden;
+    position: relative; transition: all 0.2s ease;
+}
+.save-slot-item:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: var(--accent-gold);
+    transform: translateY(-2px);
+}
+
+.save-thumbnail-container {
+    width: 220px; background: #000; position: relative;
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+.save-thumbnail { width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0.8; }
+.thumbnail-sprite { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); max-height: 90%; }
+.save-slot-item.empty .save-thumbnail { background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 20px); }
+
+.slot-info {
+    flex: 1; padding: 15px;
+    display: flex; flex-direction: column; justify-content: center;
+}
+.save-name-input {
+    background: transparent; border: none; border-bottom: 1px dashed transparent;
+    color: var(--accent-gold); font-family: 'Cinzel', serif; font-size: 1.2em;
+    width: 100%; margin-bottom: 8px; transition: border-color 0.2s;
+}
+.save-name-input:focus { outline: none; border-bottom-color: var(--accent-gold); }
+.slot-info p { margin: 0; font-size: 0.9em; color: var(--text-dim); font-style: italic; }
+
+.slot-actions {
+    position: absolute; bottom: 10px; right: 10px;
+    opacity: 0; transition: opacity 0.2s; display: flex; gap: 5px;
+}
+.save-slot-item:hover .slot-actions { opacity: 1; }
+.slot-actions button {
+    background: #222; border: 1px solid #444; color: #fff;
+    padding: 5px 10px; cursor: pointer; font-size: 0.8em; border-radius: 4px;
+}
+.slot-actions button:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.delete-btn:hover { border-color: var(--accent-danger) !important; color: var(--accent-danger) !important; }
+
+/* ==========================================================================
+   SETTINGS SCREEN
+   ========================================================================== */
+.settings-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+.settings-section {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px; padding: 20px;
+}
+.settings-section h3 {
+    color: var(--accent-gold); font-size: 1.1em; margin: 0 0 15px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;
+}
+
+.setting-item { margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+.custom-radio { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-dim); }
+.custom-radio:hover { color: var(--text-main); }
+
+/* Block Sliders */
+.block-slider { display: flex; gap: 4px; cursor: pointer; padding: 5px; background: rgba(0,0,0,0.3); border-radius: 4px; }
+.block-slider .block { flex: 1; height: 20px; background: rgba(255,255,255,0.1); border-radius: 2px; transition: background 0.2s; }
+.block-slider .block.active { background: var(--accent-gold); box-shadow: 0 0 5px var(--accent-gold); }
+
+/* ==========================================================================
+   FEATURES (Achievements, Inventory, Map)
+   ========================================================================== */
+
+/* Achievements "Cards" */
+.achievements-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+.achievement-item {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px; padding: 20px; display: flex; align-items: center; gap: 20px;
+    transition: all 0.3s ease; position: relative; overflow: hidden;
+}
+.achievement-item:not(.locked) {
+    background: linear-gradient(135deg, rgba(30,30,30,0.5), rgba(40,40,50,0.6));
+    border-color: var(--accent-gold);
+}
+.achievement-item:not(.locked):hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(197, 160, 89, 0.15); }
+.achievement-icon {
+    font-size: 2em; width: 60px; height: 60px;
+    display: flex; justify-content: center; align-items: center;
+    background: rgba(0,0,0,0.5); border-radius: 50%; color: #555;
+    flex-shrink: 0; border: 2px solid #333;
+}
+.achievement-item:not(.locked) .achievement-icon {
+    background: var(--accent-gold); color: #1a1a1a;
+    border-color: #fff; box-shadow: 0 0 15px var(--accent-gold);
+}
+.achievement-title { margin: 0 0 5px 0; font-size: 1.1em; color: var(--text-dim); }
+.achievement-item:not(.locked) .achievement-title { color: var(--accent-gold); }
+.achievement-description { font-size: 0.9em; color: #888; margin: 0; }
+.achievement-item.locked .achievement-description { filter: blur(4px); user-select: none; }
+
+/* Inventory */
+.inventory-section h3 { color: var(--accent-fern); border-bottom-color: var(--accent-fern); }
+.inventory-item {
+    background: rgba(255,255,255,0.05); border-radius: 8px; padding: 15px; text-align: center;
+    border: 1px solid transparent; transition: all 0.2s;
+}
+.inventory-item:hover { border-color: var(--accent-fern); transform: translateY(-3px); }
+.item-thumbnail {
+    width: 70px; height: 70px; object-fit: contain;
+    border: 1px solid #444; background: #222; border-radius: 4px; margin-bottom: 10px;
+}
+.item-type-tag { background: var(--accent-fern); color: #fff; border-radius: 20px; font-size: 0.75em; padding: 2px 10px; }
+
+/* Cooking */
+.cookbook-container {
+    display: flex;
+    width: 100%; height: 100%;
+    gap: 0;
+    background: #f4e4bc; /* Paper color */
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    overflow: hidden;
+    position: relative;
+    color: #4a3b2a;
+}
+
+/* Two Page Spread */
+.cookbook-page {
+    flex: 1;
+    padding: 40px;
+    display: flex; flex-direction: column;
+    border-right: 1px solid rgba(0,0,0,0.1);
+    position: relative;
+}
+.cookbook-page:last-child { border-right: none; background: linear-gradient(to right, rgba(0,0,0,0.05), transparent 20%); }
+
+/* Left Page: Details */
+.recipe-title { font-family: 'Cinzel', serif; font-size: 2em; border-bottom: 2px solid var(--accent-fern); padding-bottom: 10px; margin-bottom: 20px; color: var(--accent-fern); }
+.recipe-desc { font-family: 'Times New Roman', serif; font-size: 1.2em; line-height: 1.6; font-style: italic; }
+.recipe-image { width: 100%; height: 200px; background: #ddd; margin-bottom: 20px; border-radius: 4px; border: 1px solid #aaa; object-fit: cover; }
+
+/* Right Page: Ingredients */
+.ingredients-list { list-style: none; padding: 0; margin-top: 20px; }
+.ingredient-check-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px dashed #ccc; font-size: 1.1em; }
+.ingredient-check-item.has { color: var(--accent-fern); }
+.ingredient-check-item.missing { color: var(--accent-danger); }
+.cook-action-btn { 
+    margin-top: auto; padding: 15px; background: var(--accent-fern); color: white; 
+    border: none; font-family: 'Cinzel', serif; font-size: 1.2em; cursor: pointer; transition: 0.2s; 
+}
+.cook-action-btn:disabled { background: #999; cursor: not-allowed; }
+.cook-action-btn:not(:disabled):hover { background: #4a6b4a; }
+
+/* Navigation Arrows */
+.cookbook-nav {
+    position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; pointer-events: none;
+}
+.book-arrow {
+    pointer-events: auto; background: rgba(0,0,0,0.1); border: none; font-size: 2em; color: #5c4033; cursor: pointer; border-radius: 50%; width: 50px; height: 50px; transition: 0.2s;
+}
+.book-arrow:hover { background: rgba(0,0,0,0.2); transform: scale(1.1); }
+
+/* Ingredient Bag */
+.ingredient-bag-icon {
+    position: absolute; top: 20px; right: -70px; /* Hanging off the book */
+    width: 60px; height: 60px; background: var(--accent-gold);
+    border-radius: 50%; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; box-shadow: -5px 5px 15px rgba(0,0,0,0.3);
+    transition: right 0.3s ease; color: #1a1a1a; font-size: 1.5em;
+}
+.cookbook-container:hover .ingredient-bag-icon { right: 20px; /* Slids in on hover */ }
+
+.ingredient-bag-panel {
+    position: absolute; top: 90px; right: 20px; width: 250px;
+    background: #fff; border: 1px solid #ccc; padding: 15px;
+    border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    opacity: 0; visibility: hidden; transition: 0.3s; transform: translateY(-10px);
+}
+.ingredient-bag-icon:hover + .ingredient-bag-panel, .ingredient-bag-panel:hover {
+    opacity: 1; visibility: visible; transform: translateY(0);
+}
+.bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.bag-item-icon { width: 100%; aspect-ratio: 1; background: #eee; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 0.8em; }
+
+/* World Map */
+.world-map-container {
+    position: relative; /* Crucial for absolute points */
+    width: 100%; aspect-ratio: 16 / 9; /* Maintain map shape */
+    background: url('https://placehold.co/1280x720/333/666?text=World+Map') no-repeat center center/cover;
+    border: 2px solid var(--accent-gold);
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    margin: auto;
+}
+.map-point {
+    position: absolute; /* Points sit on top of map */
+    width: 30px; height: 30px;
+    background: var(--accent-gold); border: 2px solid #fff; border-radius: 50%;
+    cursor: pointer; display: flex; justify-content: center; align-items: center;
+    transition: transform 0.2s;
+    transform: translate(-50%, -50%); /* Center point on coordinates */
+}
+.map-point:hover { transform: translate(-50%, -50%) scale(1.3); box-shadow: 0 0 15px var(--accent-gold); }
+.map-point.locked { background: #555; border-color: #888; cursor: not-allowed; }
+
+/* ==========================================================================
+   JOURNAL (FLIPBOOK)
+   ========================================================================== */
+
+.journal-container {
+    /* Use Flexbox on the container to force centering */
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    perspective: 2500px;
+    padding: 20px; z-index: 100;
+    pointer-events: none;
+}
+.journal-container.visible { pointer-events: auto; }
+
+.journal-book-container {
+    position: relative;
+    width: 100%; height: 100%;
+    max-width: 1100px; max-height: 800px;
+    filter: drop-shadow(0 20px 50px rgba(0,0,0,0.8));
+    margin: 0; 
+}
+/* Flipbook Styles */
+#actual-animated-journal .page { background-color: #f4e4bc; color: #4a3b2a; box-shadow: inset 0 0 20px rgba(0,0,0,0.1); }
+.journal-page-inner { padding: 40px; height: 100%; }
+.journal-textarea { background: transparent; border: none; font-family: 'Times New Roman', serif; font-size: 1.2em; resize: none; width: 100%; height: 60%; outline: none; }
+.journal-navigation { position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; pointer-events: auto; }
+
+/* ==========================================================================
+   UTILITY & POPUPS
+   ========================================================================== */
+
+.notification-popup {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: var(--bg-glass); border: 1px solid var(--accent-gold);
+    color: var(--accent-gold); padding: 15px 40px; border-radius: 30px;
+    font-family: 'Cinzel', serif; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    opacity: 0; transition: all 0.5s ease; pointer-events: none; z-index: 200;
+}
+.notification-popup.show { opacity: 1; bottom: 50px; }
+
+.message-box-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    display: flex; justify-content: center; align-items: center; z-index: 9999;
+}
+.message-box {
+    background: var(--bg-deep); border: 2px solid var(--accent-gold);
+    border-radius: 8px; padding: 40px; text-align: center;
+    max-width: 500px; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+.message-box h3 { color: var(--accent-gold); margin-top: 0; }
+.message-box .button-group { margin-top: 30px; display: flex; justify-content: center; gap: 15px; }
+.message-box button {
+    background: transparent; color: var(--text-main);
+    border: 1px solid var(--text-dim); padding: 10px 30px;
+    cursor: pointer; font-family: 'Cinzel', serif; transition: all 0.2s;
+}
+.message-box button:hover {
+    border-color: var(--accent-gold); color: var(--accent-gold);
+    background: rgba(197, 160, 89, 0.1);
+}
+
+/* Affection Heart Animation */
 @keyframes affection-pulse {
     0% { transform: scale(1) translateY(0); opacity: 1; }
-    100% { transform: scale(1.5) translateY(-20px); opacity: 0; }
+    100% { transform: scale(1.5) translateY(-30px); opacity: 0; }
 }
 .affection-indicator {
-    position: absolute; 
-    right: -25px; 
-    top: 50%;
-    transform: translateY(-50%);
-    color: #ff6b81;
-    font-size: 1.2em;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 11;
+    position: absolute; right: -30px; top: 50%; transform: translateY(-50%);
+    color: #ff6b81; font-size: 1.5em; opacity: 0; pointer-events: none;
 }
-.affection-indicator.show-heart {
-    animation: affection-pulse 1s ease-out forwards;
-}
-
-.continue-prompt {
-    margin-top: 10px;
-    font-style: italic;
-    color: var(--color-rock-cliffs);
-    text-align: right;
-    width: 100%;
-}
+.affection-indicator.show-heart { animation: affection-pulse 1.2s ease-out forwards; }

@@ -1,6 +1,28 @@
 // main.js
 document.addEventListener('DOMContentLoaded', () => {
     
+    // --- Asset Preloading Helper ---
+    function preloadImages(storyData) {
+        console.log("Starting asset preload...");
+        const imagesToLoad = new Set();
+        if (storyData && Array.isArray(storyData)) {
+            storyData.forEach(line => {
+                if (Array.isArray(line) && line[0] === "scene") {
+                    const bgKey = line[1];
+                    const url = assets.backgrounds[bgKey] || bgKey;
+                    if (url) imagesToLoad.add(url);
+                }
+            });
+        }
+        Object.values(assets.characters).forEach(char => {
+            if (char.emotions) {
+                Object.values(char.emotions).forEach(url => { imagesToLoad.add(url); });
+            }
+        });
+        imagesToLoad.forEach(url => { const img = new Image(); img.src = url; });
+        console.log(`Preloading ${imagesToLoad.size} unique assets.`);
+    }
+
     // --- Event Listeners ---
     function setupEventListeners() {
         const backgroundMusic = document.getElementById('background-music');
@@ -13,11 +35,33 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Close menus when clicking the BACKDROP
+        document.getElementById('modal-backdrop').addEventListener('click', () => {
+            if (currentScreen !== 'main-menu' && currentScreen !== 'game-container') {
+                if (gameState.isGameActive) switchScreen('game-container');
+                else switchScreen('main-menu');
+            }
+        });
+
+        // SPECIFIC JOURNAL CLOSE LOGIC
+        const journalContainer = document.getElementById('journal-container');
+        if (journalContainer) {
+            journalContainer.addEventListener('click', (event) => {
+                // Only close if clicking the container itself (empty space), not the book
+                if (event.target.id === 'journal-container') {
+                    if (gameState.isGameActive) switchScreen('game-container');
+                    else switchScreen('main-menu');
+                }
+            });
+        }
+
         document.addEventListener('keydown', (event) => {
             if (gameState.isGameActive && !gameState.isOverlayOpen) {
                 if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); proceedStory(); }
                 if (event.key === 'ArrowUp') { event.preventDefault(); showDialogueFromHistory(gameState.dialogueHistoryPointer - 1); }
                 if (event.key === 'ArrowDown') { event.preventDefault(); showDialogueFromHistory(gameState.dialogueHistoryPointer + 1); }
+                if (event.key === 'F5') { event.preventDefault(); saveGame(QUICK_SAVE_SLOT_INDEX); }
+                if (event.key === 'F9') { event.preventDefault(); loadGame(QUICK_SAVE_SLOT_INDEX); }
             }
             if (event.key === 'Escape') {
                 if (currentScreen === 'game-container') {
@@ -35,10 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     switchScreen('main-menu');
                 }
             }
-            if(gameState.isGameActive && !gameState.isOverlayOpen) {
-                if (event.key === 'F5') { event.preventDefault(); saveGame(QUICK_SAVE_SLOT_INDEX); }
-                if (event.key === 'F9') { event.preventDefault(); loadGame(QUICK_SAVE_SLOT_INDEX); }
-            }
             if (currentScreen === 'journal-container' && $flipbook && $flipbook.data().turn) {
                 if (event.key === 'ArrowLeft') { event.preventDefault(); goPrevJournalPage(); } 
                 else if (event.key === 'ArrowRight') { event.preventDefault(); goNextJournalPage(); }
@@ -55,9 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cgItem = event.target.closest('.gallery-item:not(.locked)');
             const musicBtn = event.target.closest('.play-music-btn');
             const recipeItem = event.target.closest('.recipe-item:not(.locked)');
-            const cookButton = event.target.closest('.cook-button');
-            const story = getStoryData(assets);
-
+            
             if (actionTarget) {
                 const action = actionTarget.dataset.action;
                 const actions = {
@@ -69,10 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         ]);
                     },
                     'load-game-menu': () => { switchScreen('save-load-screen'); renderSaveLoadScreen('load-tab'); },
-                    'settings': () => switchScreen('settings-screen'), 'controls': () => switchScreen('controls-screen'),
-                    'about': () => switchScreen('about-screen'), 'achievements': () => switchScreen('achievements-screen'),
-                    'extras': () => switchScreen('extras-screen'), 'cg-gallery': () => switchScreen('cg-gallery-screen'),
-                    'music-room': () => switchScreen('music-room-screen'),
+                    'settings': () => switchScreen('settings-screen', true), 
+                    'controls': () => switchScreen('controls-screen', true),
+                    'about': () => switchScreen('about-screen', true), 
+                    'achievements': () => switchScreen('achievements-screen', true),
+                    'extras': () => switchScreen('extras-screen', true), 
+                    'cg-gallery': () => switchScreen('cg-gallery-screen', true),
+                    'music-room': () => switchScreen('music-room-screen', true),
                     'quit-game': () => showMessageBox('Quit', 'Are you sure you want to quit?', true, () => window.close()),
                     'ingame-settings': () => switchScreen('settings-screen', true),
                     'ingame-save': () => { switchScreen('save-load-screen', true); renderSaveLoadScreen('save-tab'); },
@@ -81,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'ingame-inventory': () => switchScreen('inventory-screen', true),
                     'ingame-dialogue-log': () => { switchScreen('dialogue-log-screen', true); renderDialogueLog(); },
                     'ingame-world-map': () => { switchScreen('world-map-screen', true); renderWorldMapScreen(); },
-                    'ingame-cooking': () => { selectedRecipeId = null; switchScreen('cooking-screen', true); renderCookingScreen(); },
+                    'ingame-cooking': () => { selectedRecipeId = null; currentRecipeIndex = 0; switchScreen('cooking-screen', true); renderCookingScreen(); },
                     'return-to-main-menu-confirm': () => {
                         showMessageBox('Return to Menu', 'Your progress for the current session will be saved.', true, () => {
                             saveSession();
@@ -90,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     },
                     'back-from-subscreen': () => gameState.isGameActive ? switchScreen('game-container') : switchScreen('main-menu'),
-                    'back-to-extras': () => switchScreen('extras-screen'),
+                    'back-to-extras': () => switchScreen('extras-screen', true),
                     'back-from-save-load': () => gameState.isGameActive ? switchScreen('game-container') : switchScreen('main-menu'),
                     'back-from-dialogue-log': () => switchScreen('game-container'),
                     'back-from-achievements': () => gameState.isGameActive ? switchScreen('game-container') : switchScreen('main-menu'),
@@ -117,10 +158,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteSave(parseInt(deleteBtn.dataset.slotIndex));
             } else if (replayBtn) {
                  const nextSceneId = replayBtn.dataset.nextSceneId;
+                 const story = getStoryData(assets);
                  showMessageBox('Replay Choice', `Replay from this point? Your current story progress will be reset to here.`, true, () => {
-                    const loadedData = createSaveData('Replay'); // Create a temporary save
+                    const loadedData = createSaveData('Replay');
                     loadedData.gameState.currentStoryIndex = story.findIndex(s => s.id === nextSceneId);
-                    applySaveData(loadedData); // Apply it
+                    applySaveData(loadedData);
                     showNotification(`Replaying from: ${nextSceneId}`);
                     switchScreen('game-container');
                  });
@@ -130,19 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 backgroundMusic.src = musicBtn.dataset.trackUrl;
                 backgroundMusic.play();
                 updateMusicToggleButton();
-            } else if (recipeItem) {
-                selectedRecipeId = recipeItem.dataset.recipeId;
-                renderCookingScreen();
-            } else if (cookButton) {
-                const recipeId = cookButton.dataset.recipeId;
-                const recipe = assets.recipes[recipeId];
-                for (const ingId in recipe.ingredients) {
-                    gameState.inventory.delete(ingId);
-                }
-                gameState.inventory.add(recipe.result);
-                showNotification(`You cooked: ${assets.items[recipe.result].name}!`);
-                selectedRecipeId = null;
-                renderCookingScreen();
             }
         });
 
@@ -170,11 +199,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Initialization ---
-    function initialize() {
+    async function initialize() {
         loadGameDataFromStorage();
         setupEventListeners();
         updateAllSettingsUI();
-        switchScreen('main-menu');
+
+        try {
+            const response = await fetch('/static/story.json');
+            if (!response.ok) throw new Error("Failed to load story script");
+            window.rawStory = await response.json(); 
+            preloadImages(window.rawStory);
+            console.log("Story loaded.");
+            switchScreen('main-menu');
+        } catch (error) {
+            console.error("Critical Error:", error);
+            showCustomMessageBox("Error", "Failed to load game data. Check console.", [{text: "Retry", action: () => location.reload()}]);
+        }
     }
 
     initialize();

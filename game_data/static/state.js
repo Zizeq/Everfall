@@ -1,4 +1,19 @@
 // state.js
+// --- Helper: Get CSRF Token ---
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 // --- Game State Variables ---
 let gameState = {
     currentStoryIndex: 0,
@@ -140,8 +155,9 @@ function applySaveData(loadedData) {
 function saveSession() {
     if (!gameState.isGameActive) return;
     const sessionData = createSaveData('Session');
+    // Session save remains local for fast resume
     localStorage.setItem('everfallSessionSave', JSON.stringify(sessionData));
-    console.log("Session saved.");
+    console.log("Session saved locally.");
 }
 
 function loadSession() {
@@ -194,10 +210,36 @@ function saveGame(slotIndex, saveName) {
     
     const saveData = createSaveData(finalSaveName);
     saveData.thumbnail = generateSaveThumbnail();
+
+    // 1. Optimistically update local cache so UI updates instantly
     saveSlots[slotIndex] = saveData;
-    localStorage.setItem('everfallSaveSlots', JSON.stringify(saveSlots));
-    showNotification(`Game saved to ${finalSaveName}`);
     if(currentScreen === 'save-load-screen') renderSaveLoadScreen('save-tab');
+
+    // 2. Send to Server
+    fetch('/api/save/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken') // <--- Add this line
+        },
+        body: JSON.stringify({
+            slot_index: slotIndex,
+            save_data: saveData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showNotification(`Saved to Server: ${finalSaveName}`);
+        } else {
+            showNotification(`Error Saving: ${data.message}`);
+            console.error(data);
+        }
+    })
+    .catch(error => {
+        showNotification(`Network Error: Save Failed`);
+        console.error("Save failed:", error);
+    });
 }
 
 function loadGame(slotIndex) {
@@ -212,33 +254,47 @@ function loadGame(slotIndex) {
 }
 
 function deleteSave(slotIndex) {
-    showMessageBox('Delete Save', `Are you sure you want to delete save slot ${slotIndex + 1}?`, true, () => {
+    showMessageBox('Delete Save', `Server deletion is not yet implemented. This will only clear the local cache.`, true, () => {
         saveSlots[slotIndex] = null;
-        localStorage.setItem('everfallSaveSlots', JSON.stringify(saveSlots));
-        showNotification(`Save slot ${slotIndex + 1} deleted.`);
         renderSaveLoadScreen('save-tab');
     });
 }
 
 function loadGameDataFromStorage() {
-    const savedData = localStorage.getItem('everfallSaveSlots');
-    if (savedData) {
-        try {
-            saveSlots = JSON.parse(savedData);
-        } catch(e) {
-            console.error("Could not parse save slots. Resetting.", e);
-            saveSlots = Array(10).fill(null);
-            localStorage.removeItem('everfallSaveSlots');
-        }
-    }
+    // 1. Load Global Unlocks from LocalStorage (Achievements, etc.)
     gameState.unlockedAchievements = new Set(JSON.parse(localStorage.getItem('everfallAchievements') || '[]'));
     gameState.unlockedCGs = new Set(JSON.parse(localStorage.getItem('everfallCGs') || '[]'));
     gameState.unlockedTracks = new Set(JSON.parse(localStorage.getItem('everfallTracks') || '[]'));
     gameState.unlockedMapLocations = new Set(JSON.parse(localStorage.getItem('everfallMapLocations') || '["everfall_city"]'));
     gameState.unlockedRecipes = new Set(JSON.parse(localStorage.getItem('everfallRecipes') || '["hearty_stew"]'));
+
+    // 2. Fetch Save Slots from Server
+    console.log("Fetching saves from server...");
+    fetch('/api/load/')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            saveSlots = Array(10).fill(null);
+            // The server returns { "0": {...}, "1": {...} }
+            for (const [index, slotData] of Object.entries(data.slots)) {
+                saveSlots[parseInt(index)] = slotData;
+            }
+            console.log("Saves synced from server.");
+            // If the user happens to be on the save screen, refresh it
+            if(currentScreen === 'save-load-screen') {
+                const activeTab = document.querySelector('.save-load-tabs .active').dataset.tab;
+                renderSaveLoadScreen(activeTab);
+            }
+        }
+    })
+    .catch(error => {
+        console.warn("Could not fetch saves from server. Playing offline?", error);
+        saveSlots = Array(10).fill(null); // Fallback to empty
+    });
 }
 
 function saveGameDataToStorage() {
+    // Keeps global progress (achievements, etc) in localStorage for now
     localStorage.setItem('everfallAchievements', JSON.stringify(Array.from(gameState.unlockedAchievements)));
     localStorage.setItem('everfallCGs', JSON.stringify(Array.from(gameState.unlockedCGs)));
     localStorage.setItem('everfallTracks', JSON.stringify(Array.from(gameState.unlockedTracks)));

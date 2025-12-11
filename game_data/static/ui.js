@@ -5,7 +5,18 @@ let currentScreen = 'main-menu';
 function switchScreen(screenId, isModal = false, onScreenReady = () => {}) {
     const allScreens = document.querySelectorAll('.main-menu-container, .game-container, .sub-screen, .save-load-screen, .journal-container');
     const modalBackdrop = document.getElementById('modal-backdrop');
-    allScreens.forEach(s => s.classList.remove('visible', 'modal-in-game-screen'));
+    
+    // FIX: Only hide base layers if we are NOT opening a modal.
+    if (!isModal) {
+        allScreens.forEach(s => s.classList.remove('visible', 'modal-in-game-screen'));
+    } else {
+        // If opening a modal, just close other overlapping popups (like swapping Settings -> Load)
+        // But KEEP the game-container or main-menu visible behind it.
+        const popups = document.querySelectorAll('.sub-screen, .save-load-screen, .journal-container');
+        popups.forEach(p => {
+            if (p.id !== screenId) p.classList.remove('visible');
+        });
+    }
 
     modalBackdrop.classList.toggle('visible', isModal);
 
@@ -16,21 +27,34 @@ function switchScreen(screenId, isModal = false, onScreenReady = () => {}) {
         }
         requestAnimationFrame(() => {
             targetScreen.classList.add('visible');
-            const isGameScreen = screenId === 'game-container';
-            const isOverlay = isModal || !isGameScreen;
             
-            // DOM Elements
+            // Manage Game UI Elements (Hide them if not in game, show if in game)
+            // Note: If overlay is open, we generally keep them visible but blurred by CSS backdrop
+            const isGameScreen = screenId === 'game-container' || (gameState.isGameActive && isModal);
+            
             const dialogueBoxElement = document.getElementById('dialogue-box');
             const topControlsElement = document.querySelector('.top-controls');
             const characterDisplay = document.getElementById('character-display');
             const choicesContainerElement = document.getElementById('choices-container');
 
-            if (dialogueBoxElement) dialogueBoxElement.style.display = isGameScreen ? 'flex' : 'none';
-            if (topControlsElement) topControlsElement.style.display = isGameScreen ? 'flex' : 'none';
-            if (characterDisplay) characterDisplay.style.display = isGameScreen ? 'flex' : 'none';
-            if (choicesContainerElement) choicesContainerElement.style.display = 'none';
+            // Determine visibility based on whether we are actually IN the game flow
+            const showGameUI = gameState.isGameActive;
 
-            gameState.isOverlayOpen = isOverlay;
+            if (dialogueBoxElement) dialogueBoxElement.style.display = showGameUI ? 'flex' : 'none';
+            if (topControlsElement) topControlsElement.style.display = showGameUI ? 'flex' : 'none';
+            if (characterDisplay) characterDisplay.style.display = showGameUI ? 'flex' : 'none';
+            
+            // Choices are special - only show if active
+            if (choicesContainerElement) {
+                if (screenId === 'game-container') {
+                     // Keep existing state (block/none handled by engine)
+                } else {
+                    // Hide choices if a menu is open to prevent clicking
+                    choicesContainerElement.style.display = 'none';
+                }
+            }
+
+            gameState.isOverlayOpen = isModal;
             onScreenReady();
         });
         currentScreen = screenId;
@@ -38,6 +62,7 @@ function switchScreen(screenId, isModal = false, onScreenReady = () => {}) {
         console.error(`Target screen with ID '${screenId}' not found.`);
     }
 
+    // Refresh Content
     if (screenId === 'main-menu') updateMainMenuUI();
     if (screenId === 'save-load-screen') renderSaveLoadScreen('save-tab');
     if (screenId === 'achievements-screen') renderAchievementsScreen();
@@ -45,7 +70,7 @@ function switchScreen(screenId, isModal = false, onScreenReady = () => {}) {
     if (screenId === 'cg-gallery-screen') renderCGGalleryScreen();
     if (screenId === 'music-room-screen') renderMusicRoomScreen();
     if (screenId === 'world-map-screen') renderWorldMapScreen();
-    if (screenId === 'cooking-screen') { selectedRecipeId = null; renderCookingScreen(); }
+    if (screenId === 'cooking-screen') { selectedRecipeId = null; currentRecipeIndex = 0; renderCookingScreen(); }
 }
 
 function updateBackground(src, fade) {
@@ -66,6 +91,15 @@ function updateBackground(src, fade) {
 
 function updateCharacterSprite(characterId, action, position = 'center', emotion = 'default') {
     const characterDisplay = document.getElementById('character-display');
+    
+    if (action === 'hide-all') {
+        Object.values(currentCharacterSprites).forEach(sprite => {
+            if(sprite.element) sprite.element.style.display = 'none';
+        });
+        // We don't clear the object here to preserve state for saves, just hide DOM
+        return;
+    }
+
     let spriteElement = currentCharacterSprites[characterId]?.element;
 
     if (action === 'show') {
@@ -77,34 +111,34 @@ function updateCharacterSprite(characterId, action, position = 'center', emotion
             characterDisplay.appendChild(spriteElement);
             currentCharacterSprites[characterId] = { element: spriteElement, position: position };
         }
+        
         const charData = assets.characters[characterId];
-        if (charData && charData.emotions && charData.emotions[emotion]) {
-            spriteElement.src = charData.emotions[emotion];
-        } else if (charData && charData.emotions && charData.emotions.default) {
-            spriteElement.src = charData.emotions.default;
-        } else {
-                spriteElement.src = 'https://placehold.co/400x700/cccccc/000000?text=Sprite+Not+Found';
+        let src = 'https://placehold.co/400x700/cccccc/000000?text=Sprite+Not+Found';
+        
+        if (charData) {
+            if (charData.emotions && charData.emotions[emotion]) {
+                src = charData.emotions[emotion];
+            } else if (charData.emotions && charData.emotions.default) {
+                src = charData.emotions.default;
+            }
         }
         
+        spriteElement.src = src;
         spriteElement.style.display = 'block';
         spriteElement.style.left = 'auto';
         spriteElement.style.right = 'auto';
         spriteElement.style.transform = 'translateX(-50%)';
 
         switch (position) {
-            case 'left': spriteElement.style.left = '10%'; spriteElement.style.transform = 'translateX(0)'; break;
-            case 'right': spriteElement.style.right = '10%'; spriteElement.style.transform = 'translateX(0)'; break;
+            case 'left': spriteElement.style.left = '20%'; break;
+            case 'right': spriteElement.style.left = '80%'; break;
             case 'center': default: spriteElement.style.left = '50%'; break;
         }
         currentCharacterSprites[characterId].position = position;
+        
     } else if (action === 'hide') {
         if (spriteElement) spriteElement.style.display = 'none';
-    } else if (action === 'hide-all') {
-        Object.values(currentCharacterSprites).forEach(sprite => {
-            sprite.element.style.display = 'none';
-        });
-        currentCharacterSprites = {};
-    }
+    } 
 }
 
 function showCustomMessageBox(title, message, buttons) {
@@ -214,9 +248,11 @@ function generateSaveThumbnail() {
             const thumbSprite = document.createElement('img');
             thumbSprite.src = spriteInfo.element.src;
             thumbSprite.classList.add('thumbnail-sprite');
-            if (spriteInfo.position === 'left') thumbSprite.style.left = '5%';
-            else if (spriteInfo.position === 'right') thumbSprite.style.right = '5%';
+            // Simplified position mapping for thumbnail
+            if (spriteInfo.position === 'left') thumbSprite.style.left = '20%';
+            else if (spriteInfo.position === 'right') thumbSprite.style.left = '80%';
             else thumbSprite.style.left = '50%';
+            thumbSprite.style.transform = 'translateX(-50%)';
             thumbnailDiv.appendChild(thumbSprite);
         }
     }

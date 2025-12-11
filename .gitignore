@@ -1,9 +1,16 @@
-# Python environment and cache
+# --- Python & Django ---
 venv/
+env/
 __pycache__/
-
-# Database file (SQLite)
+*.pyc
 db.sqlite3
+db.sqlite3-journal
 
-# Project-specific files to ignore
+# --- IDEs & OS ---
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
+
+# --- Deployment / Collected Files ---
+staticfiles/

@@ -4,7 +4,9 @@
 let $flipbook;
 let charIdToPageMap = {};
 let isJournalInitialized = false;
-let selectedRecipeId = null;
+
+// --- Cooking Variables ---
+let currentRecipeIndex = 0; // For the cookbook pagination
 
 // --- Journal Logic ---
 function renderJournal() {
@@ -119,6 +121,143 @@ function selectJournalCharacter(charId) {
 function goNextJournalPage() { if ($flipbook) $flipbook.turn('next'); }
 function goPrevJournalPage() { if ($flipbook) $flipbook.turn('previous'); }
 
+// --- World Map Logic (Fixed) ---
+function renderWorldMapScreen() {
+    const container = document.getElementById('world-map-container');
+    container.innerHTML = '';
+    
+    Object.values(assets.mapLocations).forEach(loc => {
+        const isUnlocked = gameState.unlockedMapLocations.has(loc.id);
+        const point = document.createElement('div');
+        point.className = `map-point ${isUnlocked ? '' : 'locked'}`;
+        
+        // Ensure styles are set directly
+        point.style.position = 'absolute';
+        point.style.top = loc.coords.top;
+        point.style.left = loc.coords.left;
+        
+        point.dataset.locationId = loc.id;
+        point.innerHTML = `<i class="fas fa-map-marker-alt"></i><span class="map-point-tooltip">${loc.name}<br>${isUnlocked ? '(Click to explore)' : '(Location unknown)'}</span>`;
+        
+        if (isUnlocked) {
+            point.onclick = () => exploreMapLocation(loc.id);
+        }
+        container.appendChild(point);
+    });
+}
+
+function exploreMapLocation(locationId) {
+    const location = assets.mapLocations[locationId];
+    let message = `<p>${location.lore}</p>`;
+    if (location.gatherableIngredients && location.gatherableIngredients.length > 0) {
+        if (Math.random() > 0.5) {
+            const foundIngredientId = location.gatherableIngredients[Math.floor(Math.random() * location.gatherableIngredients.length)];
+            const ingredient = assets.items[foundIngredientId];
+            gameState.inventory.add(foundIngredientId);
+            message += `<br><p style="color: var(--color-fern-glow);">You found: ${ingredient.name}!</p>`;
+            showNotification(`Found: ${ingredient.name}`);
+        } else {
+            message += `<br><p>You searched for ingredients but found nothing this time.</p>`;
+        }
+    }
+    showMessageBox(`Exploring: ${location.name}`, message, false);
+}
+
+// --- New Cookbook Logic ---
+function renderCookingScreen() {
+    const container = document.getElementById('cooking-container');
+    
+    // Get list of unlocked recipes
+    const unlockedRecipes = Array.from(gameState.unlockedRecipes);
+    if (unlockedRecipes.length === 0) {
+        container.innerHTML = '<p style="color:white; text-align:center;">You have no recipes yet.</p>';
+        return;
+    }
+    
+    // Safety check for index
+    if (currentRecipeIndex >= unlockedRecipes.length) currentRecipeIndex = 0;
+    if (currentRecipeIndex < 0) currentRecipeIndex = unlockedRecipes.length - 1;
+    
+    const recipeId = unlockedRecipes[currentRecipeIndex];
+    const recipe = assets.recipes[recipeId];
+    const resultItem = assets.items[recipe.result];
+    
+    // Build Ingredients List
+    let ingredientsHtml = '';
+    let canCook = true;
+    for (const [ingId, qty] of Object.entries(recipe.ingredients)) {
+        const hasItem = gameState.inventory.has(ingId);
+        if (!hasItem) canCook = false;
+        
+        ingredientsHtml += `
+            <li class="ingredient-check-item ${hasItem ? 'has' : 'missing'}">
+                <span>${qty}x ${assets.items[ingId].name}</span>
+                <i class="fas ${hasItem ? 'fa-check' : 'fa-times'}"></i>
+            </li>`;
+    }
+
+    // Build Inventory Bag (Hover Panel)
+    const inventoryItems = Array.from(gameState.inventory)
+        .map(id => assets.items[id])
+        .filter(item => item.type === 'ingredient')
+        .map(item => `<div class="bag-item-icon" title="${item.name}"><img src="${item.thumbnail}" style="width:100%; border-radius:4px;"></div>`)
+        .join('');
+
+    const html = `
+        <div class="cookbook-container">
+            <div class="ingredient-bag-icon"><i class="fas fa-shopping-bag"></i></div>
+            <div class="ingredient-bag-panel">
+                <h4>Your Ingredients</h4>
+                <div class="bag-grid">${inventoryItems || '<p>Empty</p>'}</div>
+            </div>
+
+            <div class="cookbook-page left-page">
+                <h2 class="recipe-title">${recipe.name}</h2>
+                <div class="recipe-image" style="background-image: url('${resultItem.thumbnail}'); background-size: cover; background-position: center;"></div>
+                <p class="recipe-desc">${recipe.description}</p>
+                <div style="margin-top:auto; text-align:center; color: #888;">
+                    Page ${currentRecipeIndex + 1} of ${unlockedRecipes.length}
+                </div>
+            </div>
+
+            <div class="cookbook-page right-page">
+                <h3>Required Ingredients</h3>
+                <ul class="ingredients-list">
+                    ${ingredientsHtml}
+                </ul>
+                
+                <button class="cook-action-btn" onclick="attemptCook('${recipeId}')" ${canCook ? '' : 'disabled'}>
+                    ${canCook ? 'Cook Dish' : 'Missing Ingredients'}
+                </button>
+            </div>
+
+            <div class="cookbook-nav">
+                <button class="book-arrow" onclick="changeRecipePage(-1)"><i class="fas fa-chevron-left"></i></button>
+                <button class="book-arrow" onclick="changeRecipePage(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+function changeRecipePage(delta) {
+    currentRecipeIndex += delta;
+    renderCookingScreen();
+}
+
+function attemptCook(recipeId) {
+    const recipe = assets.recipes[recipeId];
+    // Consume ingredients
+    for (const ingId in recipe.ingredients) {
+        gameState.inventory.delete(ingId);
+    }
+    // Add result
+    gameState.inventory.add(recipe.result);
+    showNotification(`You cooked: ${assets.items[recipe.result].name}!`);
+    renderCookingScreen(); // Refresh to update ingredients list
+}
+
 // --- Other Feature Screens ---
 
 function renderDialogueLog() {
@@ -207,74 +346,6 @@ function renderMusicRoomScreen() {
                     ${isUnlocked ? `<button class="play-music-btn" data-track-url="${track.url}"><i class="fas fa-play"></i></button>` : '<i class="fas fa-lock"></i>'}
                 </div>`;
     }).join('');
-}
-
-function renderWorldMapScreen() {
-    const container = document.getElementById('world-map-container');
-    container.innerHTML = '';
-    Object.values(assets.mapLocations).forEach(loc => {
-        const isUnlocked = gameState.unlockedMapLocations.has(loc.id);
-        const point = document.createElement('div');
-        point.className = `map-point ${isUnlocked ? '' : 'locked'}`;
-        point.style.top = loc.coords.top;
-        point.style.left = loc.coords.left;
-        point.dataset.locationId = loc.id;
-        point.innerHTML = `<i class="fas fa-map-marker-alt"></i><span class="map-point-tooltip">${loc.name}<br>${isUnlocked ? '(Click to explore)' : '(Location unknown)'}</span>`;
-        if (isUnlocked) {
-            point.onclick = () => exploreMapLocation(loc.id);
-        }
-        container.appendChild(point);
-    });
-}
-
-function exploreMapLocation(locationId) {
-    const location = assets.mapLocations[locationId];
-    let message = `<p>${location.lore}</p>`;
-    if (location.gatherableIngredients && location.gatherableIngredients.length > 0) {
-        if (Math.random() > 0.5) {
-            const foundIngredientId = location.gatherableIngredients[Math.floor(Math.random() * location.gatherableIngredients.length)];
-            const ingredient = assets.items[foundIngredientId];
-            gameState.inventory.add(foundIngredientId);
-            message += `<br><p style="color: var(--color-fern-glow);">You found: ${ingredient.name}!</p>`;
-            showNotification(`Found: ${ingredient.name}`);
-        } else {
-            message += `<br><p>You searched for ingredients but found nothing this time.</p>`;
-        }
-    }
-    showMessageBox(`Exploring: ${location.name}`, message, false);
-}
-
-function renderCookingScreen() {
-    const container = document.getElementById('cooking-container');
-    const unlockedRecipesHTML = Array.from(gameState.unlockedRecipes).map(id => {
-        const recipe = assets.recipes[id];
-        return `<div class="recipe-item ${selectedRecipeId === id ? 'selected' : ''}" data-recipe-id="${id}">${recipe.name}</div>`;
-    }).join('');
-    const lockedRecipesCount = Object.keys(assets.recipes).length - gameState.unlockedRecipes.size;
-    const lockedRecipesHTML = lockedRecipesCount > 0 ? `<div class="recipe-item locked">${lockedRecipesCount} more recipes to discover...</div>` : '';
-    let detailsHTML = '<h3>Recipe Details</h3><div class="recipe-details-content">';
-    if (selectedRecipeId) {
-        const recipe = assets.recipes[selectedRecipeId];
-        detailsHTML += `<p>${recipe.description}</p><h4>Ingredients:</h4><ul>`;
-        let canCook = true;
-        for (const ingId in recipe.ingredients) {
-            const requiredQty = recipe.ingredients[ingId];
-            const hasItem = gameState.inventory.has(ingId); 
-            if (!hasItem) canCook = false;
-            detailsHTML += `<li class="${hasItem ? 'has-ingredient' : 'missing-ingredient'}">${requiredQty}x ${assets.items[ingId].name} ${hasItem ? '✔' : '✖'}</li>`;
-        }
-        detailsHTML += '</ul>';
-        detailsHTML += `<button class="cook-button" data-recipe-id="${recipe.id}" ${canCook ? '' : 'disabled'}>Cook It!</button>`;
-    } else {
-        detailsHTML += '<p>Select a recipe to see the details.</p>';
-    }
-    detailsHTML += '</div>';
-    const ingredients = Array.from(gameState.inventory).map(id => assets.items[id]).filter(item => item.type === 'ingredient');
-    const ingredientsHTML = ingredients.length > 0 ? ingredients.map(item => `<div class="ingredient-item">${item.name}</div>`).join('') : '<p>No ingredients.</p>';
-    container.innerHTML = `
-        <div class="cooking-section"><h3>Recipe Book</h3><div class="scrollable-list">${unlockedRecipesHTML}${lockedRecipesHTML}</div></div>
-        <div class="cooking-section" id="recipe-details-section">${detailsHTML}</div>
-        <div class="cooking-section"><h3>Available Ingredients</h3><div class="scrollable-list">${ingredientsHTML}</div></div>`;
 }
 
 function renderSaveLoadScreen(activeTab) {
